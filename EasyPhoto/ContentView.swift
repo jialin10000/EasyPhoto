@@ -9,6 +9,7 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct ContentView: View {
+    @EnvironmentObject var loc: LocalizationManager
     @State private var currentImage: NSImage?
     @State private var metadata: ImageMetadata?
     @State private var isDragging = false
@@ -16,6 +17,8 @@ struct ContentView: View {
     @State private var folderImages: [URL] = []
     @State private var currentIndex: Int = 0
     @State private var showExif: Bool = true
+    @State private var slideshowActive: Bool = false
+    @State private var slideshowTimer: Timer?
     
     var body: some View {
         HSplitView {
@@ -24,29 +27,48 @@ struct ContentView: View {
                 Color(NSColor.windowBackgroundColor)
                 
                 if let image = currentImage {
-                    ImageViewer(image: image)
+                    ImageViewer(image: image, onNavigate: { direction in
+                        navigateImage(direction: direction)
+                    })
                 } else {
                     // 拖拽提示
                     VStack(spacing: 16) {
                         Image(systemName: "photo.on.rectangle.angled")
                             .font(.system(size: 64))
                             .foregroundColor(.secondary)
-                        
-                        Text("拖拽图片到这里")
+
+                        Text(loc.s(.dropHint))
                             .font(.title2)
                             .foregroundColor(.secondary)
-                        
-                        Text("支持 JPG、HEIC、PNG、RAW 等格式")
+
+                        Text(loc.s(.formatHint))
                             .font(.caption)
                             .foregroundColor(.secondary.opacity(0.7))
-                        
-                        Text("快捷键：← → 切换图片 | I 显示/隐藏信息 | F 全屏")
+
+                        Text(loc.s(.shortcutHint))
                             .font(.caption2)
                             .foregroundColor(.secondary.opacity(0.7))
                             .padding(.top, 8)
                     }
                 }
                 
+                // 幻灯片播放指示
+                if slideshowActive {
+                    VStack {
+                        HStack {
+                            Spacer()
+                            Text("\(loc.s(.slideshowPlaying)) (\(loc.s(.slideshowStop)))")
+                                .font(.caption)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(.ultraThinMaterial)
+                                .cornerRadius(8)
+                                .padding(12)
+                        }
+                        Spacer()
+                    }
+                }
+
                 // 拖拽高亮效果
                 if isDragging {
                     RoundedRectangle(cornerRadius: 12)
@@ -73,7 +95,8 @@ struct ContentView: View {
         .background(KeyboardEventHandler(
             onLeftArrow: { navigateImage(direction: -1) },
             onRightArrow: { navigateImage(direction: 1) },
-            onToggleExif: { showExif.toggle() }
+            onToggleExif: { showExif.toggle() },
+            onToggleSlideshow: { toggleSlideshow() }
         ))
     }
     
@@ -158,6 +181,40 @@ struct ContentView: View {
         }
     }
     
+    // MARK: - 幻灯片
+
+    private func toggleSlideshow() {
+        if slideshowActive {
+            stopSlideshow()
+        } else {
+            startSlideshow()
+        }
+    }
+
+    private func startSlideshow() {
+        guard !folderImages.isEmpty else { return }
+        slideshowActive = true
+        slideshowTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { _ in
+            DispatchQueue.main.async {
+                let nextIndex = currentIndex + 1
+                if nextIndex < folderImages.count {
+                    currentIndex = nextIndex
+                    loadImage(from: folderImages[currentIndex])
+                } else {
+                    // 播放到最后一张，循环回第一张
+                    currentIndex = 0
+                    loadImage(from: folderImages[currentIndex])
+                }
+            }
+        }
+    }
+
+    private func stopSlideshow() {
+        slideshowActive = false
+        slideshowTimer?.invalidate()
+        slideshowTimer = nil
+    }
+
     private func setupKeyboardShortcuts() {
         // 键盘事件在 KeyboardEventHandler 中处理
     }
@@ -169,19 +226,22 @@ struct KeyboardEventHandler: NSViewRepresentable {
     var onLeftArrow: () -> Void
     var onRightArrow: () -> Void
     var onToggleExif: () -> Void
-    
+    var onToggleSlideshow: () -> Void
+
     func makeNSView(context: Context) -> KeyboardView {
         let view = KeyboardView()
         view.onLeftArrow = onLeftArrow
         view.onRightArrow = onRightArrow
         view.onToggleExif = onToggleExif
+        view.onToggleSlideshow = onToggleSlideshow
         return view
     }
-    
+
     func updateNSView(_ nsView: KeyboardView, context: Context) {
         nsView.onLeftArrow = onLeftArrow
         nsView.onRightArrow = onRightArrow
         nsView.onToggleExif = onToggleExif
+        nsView.onToggleSlideshow = onToggleSlideshow
     }
 }
 
@@ -189,9 +249,10 @@ class KeyboardView: NSView {
     var onLeftArrow: (() -> Void)?
     var onRightArrow: (() -> Void)?
     var onToggleExif: (() -> Void)?
-    
+    var onToggleSlideshow: (() -> Void)?
+
     override var acceptsFirstResponder: Bool { true }
-    
+
     override func keyDown(with event: NSEvent) {
         switch event.keyCode {
         case 123: // 左箭头
@@ -200,6 +261,8 @@ class KeyboardView: NSView {
             onRightArrow?()
         case 34: // I 键
             onToggleExif?()
+        case 1: // S 键
+            onToggleSlideshow?()
         default:
             super.keyDown(with: event)
         }

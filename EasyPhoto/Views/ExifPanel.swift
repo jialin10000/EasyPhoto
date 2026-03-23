@@ -10,116 +10,117 @@ import SwiftUI
 struct ExifPanel: View {
     let metadata: ImageMetadata?
     let imageURL: URL?
-    
+    @ObservedObject var loc = LocalizationManager.shared
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 // 文件信息
                 if let url = imageURL {
-                    SectionView(title: "文件") {
-                        InfoRow(label: "文件名", value: url.lastPathComponent)
-                        
+                    SectionView(title: loc.s(.exifFile)) {
+                        InfoRow(label: loc.s(.exifFilename), value: url.lastPathComponent)
+
                         if let size = metadata?.fileSizeFormatted {
-                            InfoRow(label: "大小", value: size)
+                            InfoRow(label: loc.s(.exifFileSize), value: size)
                         }
-                        
+
                         if let resolution = metadata?.resolutionFormatted {
-                            InfoRow(label: "分辨率", value: resolution)
+                            InfoRow(label: loc.s(.exifResolution), value: resolution)
                         }
                     }
                 }
-                
+
                 // 相机信息
                 if metadata?.cameraModel != nil || metadata?.cameraMake != nil {
-                    SectionView(title: "相机") {
+                    SectionView(title: loc.s(.exifCamera)) {
                         if let make = metadata?.cameraMake {
-                            InfoRow(label: "品牌", value: make)
+                            InfoRow(label: loc.s(.exifCameraMake), value: make)
                         }
-                        
+
                         if let model = metadata?.cameraModel {
-                            InfoRow(label: "型号", value: model)
+                            InfoRow(label: loc.s(.exifCameraModel), value: model)
                         }
                     }
                 }
-                
+
                 // 镜头信息
                 if metadata?.lensModel != nil {
-                    SectionView(title: "镜头") {
+                    SectionView(title: loc.s(.exifLens)) {
                         if let lens = metadata?.lensModel {
-                            InfoRow(label: "型号", value: lens)
+                            InfoRow(label: loc.s(.exifLensModel), value: lens)
                         }
                     }
                 }
-                
+
                 // 拍摄参数
                 if hasShootingParams {
-                    SectionView(title: "拍摄参数") {
+                    SectionView(title: loc.s(.exifShooting)) {
                         if let focal = metadata?.focalLengthFormatted {
-                            InfoRow(label: "焦距", value: focal)
+                            InfoRow(label: loc.s(.exifFocalLength), value: focal)
                         }
-                        
+
                         if let aperture = metadata?.apertureFormatted {
-                            InfoRow(label: "光圈", value: aperture)
+                            InfoRow(label: loc.s(.exifAperture), value: aperture)
                         }
-                        
+
                         if let shutter = metadata?.shutterSpeedFormatted {
-                            InfoRow(label: "快门", value: shutter)
+                            InfoRow(label: loc.s(.exifShutterSpeed), value: shutter)
                         }
-                        
+
                         if let iso = metadata?.isoFormatted {
-                            InfoRow(label: "ISO", value: iso)
+                            InfoRow(label: loc.s(.exifISO), value: iso)
                         }
-                        
+
                         if let bias = metadata?.exposureBiasFormatted {
-                            InfoRow(label: "曝光补偿", value: bias)
+                            InfoRow(label: loc.s(.exifExposureBias), value: bias)
                         }
                     }
                 }
-                
+
                 // 时间信息
                 if metadata?.dateFormatted != nil {
-                    SectionView(title: "时间") {
+                    SectionView(title: loc.s(.exifTime)) {
                         if let date = metadata?.dateFormatted {
-                            InfoRow(label: "拍摄时间", value: date)
+                            InfoRow(label: loc.s(.exifOriginalDate), value: date)
                         }
                     }
                 }
-                
+
                 // GPS 信息
                 if metadata?.hasGPS == true {
-                    SectionView(title: "位置") {
+                    SectionView(title: loc.s(.exifLocation)) {
                         if let gps = metadata?.gpsFormatted {
-                            InfoRow(label: "GPS", value: gps)
+                            InfoRow(label: loc.s(.exifCoordinates), value: gps)
                         }
-                        
+
                         if let altitude = metadata?.altitude {
-                            InfoRow(label: "海拔", value: String(format: "%.1f m", altitude))
+                            InfoRow(label: loc.s(.exifAltitude), value: String(format: "%.1f m", altitude))
                         }
                     }
                 }
-                
+
                 // 无 EXIF 数据提示
                 if metadata == nil && imageURL != nil {
                     VStack(spacing: 8) {
                         Image(systemName: "info.circle")
                             .font(.title2)
                             .foregroundColor(.secondary)
-                        
-                        Text("无 EXIF 数据")
+
+                        Text(loc.s(.exifNoInfo))
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 32)
                 }
-                
+
                 Spacer()
             }
             .padding()
         }
         .background(Color(NSColor.controlBackgroundColor))
     }
-    
+
     private var hasShootingParams: Bool {
         return metadata?.focalLength != nil ||
                metadata?.aperture != nil ||
@@ -133,13 +134,13 @@ struct ExifPanel: View {
 struct SectionView<Content: View>: View {
     let title: String
     @ViewBuilder let content: Content
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title)
                 .font(.headline)
                 .foregroundColor(.primary)
-            
+
             VStack(alignment: .leading, spacing: 4) {
                 content
             }
@@ -151,19 +152,19 @@ struct SectionView<Content: View>: View {
 struct InfoRow: View {
     let label: String
     let value: String
-    
+
     var body: some View {
         HStack(alignment: .top) {
             Text(label)
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .frame(width: 70, alignment: .leading)
-            
+
             Text(value)
                 .font(.caption)
                 .foregroundColor(.primary)
                 .textSelection(.enabled)
-            
+
             Spacer()
         }
     }
