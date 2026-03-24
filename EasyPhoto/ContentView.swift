@@ -92,6 +92,17 @@ struct ContentView: View {
         .onAppear {
             setupKeyboardShortcuts()
         }
+        .onReceive(NotificationCenter.default.publisher(for: .openImageFile)) { notification in
+            if let url = notification.object as? URL {
+                loadImage(from: url)
+                loadFolderImages(from: url)
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .openImageFolder)) { notification in
+            if let folderURL = notification.object as? URL {
+                openFolder(folderURL)
+            }
+        }
         .background(KeyboardEventHandler(
             onLeftArrow: { navigateImage(direction: -1) },
             onRightArrow: { navigateImage(direction: 1) },
@@ -213,6 +224,33 @@ struct ContentView: View {
         slideshowActive = false
         slideshowTimer?.invalidate()
         slideshowTimer = nil
+    }
+
+    // MARK: - 打开文件夹
+
+    private func openFolder(_ folderURL: URL) {
+        let fileManager = FileManager.default
+        let imageExtensions = ["jpg", "jpeg", "png", "heic", "heif", "tiff", "tif", "gif", "bmp", "raw", "cr2", "cr3", "nef", "arw", "orf", "rw2", "dng"]
+
+        do {
+            let contents = try fileManager.contentsOfDirectory(
+                at: folderURL,
+                includingPropertiesForKeys: [.contentTypeKey],
+                options: [.skipsHiddenFiles]
+            )
+
+            folderImages = contents.filter { fileURL in
+                imageExtensions.contains(fileURL.pathExtension.lowercased())
+            }.sorted { $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending }
+
+            // 打开第一张
+            if let first = folderImages.first {
+                currentIndex = 0
+                loadImage(from: first)
+            }
+        } catch {
+            print("无法读取文件夹: \(error)")
+        }
     }
 
     private func setupKeyboardShortcuts() {

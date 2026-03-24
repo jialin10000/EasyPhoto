@@ -93,6 +93,8 @@ enum StringKey {
     case menuLanguage
     case menuHelp
     case menuAbout
+    case menuOpenFile
+    case menuOpenFolder
 
     // Help 窗口
     case helpTitle
@@ -148,6 +150,8 @@ enum StringKey {
         case .menuLanguage: return "语言"
         case .menuHelp: return "使用帮助"
         case .menuAbout: return "关于 EasyPhoto"
+        case .menuOpenFile: return "打开图片…"
+        case .menuOpenFolder: return "打开文件夹…"
         case .helpTitle: return "EasyPhoto 使用帮助"
         case .helpBasicTitle: return "基本操作"
         case .helpBasicDragDrop: return "将图片文件拖拽到窗口中即可查看"
@@ -203,6 +207,8 @@ enum StringKey {
         case .menuLanguage: return "Language"
         case .menuHelp: return "Help Guide"
         case .menuAbout: return "About EasyPhoto"
+        case .menuOpenFile: return "Open Image…"
+        case .menuOpenFolder: return "Open Folder…"
         case .helpTitle: return "EasyPhoto Help"
         case .helpBasicTitle: return "Getting Started"
         case .helpBasicDragDrop: return "Drag and drop an image file into the window to view it"
