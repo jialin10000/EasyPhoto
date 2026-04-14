@@ -21,10 +21,12 @@ class LocalizationManager: ObservableObject {
         case chinese = "zh"
         case english = "en"
 
-        var displayName: String {
-            switch self {
-            case .chinese: return "中文"
-            case .english: return "English"
+        func displayName(in locale: Language) -> String {
+            switch (self, locale) {
+            case (.chinese, .chinese): return "中文"
+            case (.english, .chinese): return "英文"
+            case (.chinese, .english): return "Chinese"
+            case (.english, .english): return "English"
             }
         }
     }

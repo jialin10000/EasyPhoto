@@ -49,7 +49,7 @@ struct EasyPhotoApp: App {
                         loc.currentLanguage = lang
                     } label: {
                         HStack {
-                            Text(lang.displayName)
+                            Text(lang.displayName(in: loc.currentLanguage))
                             if loc.currentLanguage == lang {
                                 Text("✓")
                             }

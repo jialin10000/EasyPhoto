@@ -37,6 +37,7 @@ struct ContentView: View {
     @State private var isExifForcedOn: Bool = false
     @State private var isExifEdgeHoverOn: Bool = false
     @State private var isExifPanelHoverOn: Bool = false
+    @State private var exifEdgeExitTaskBox = HideTaskBox()
     @State private var exifDragOffset: CGSize = .zero
     @State private var exifDragLastOffset: CGSize = .zero
 
@@ -214,19 +215,23 @@ struct ContentView: View {
 
     private func handleEdgeHover(_ entering: Bool) {
         if entering {
+            exifEdgeExitTaskBox.cancel()
             withAnimation(.easeInOut(duration: 0.15)) { isExifEdgeHoverOn = true }
         } else {
-            // Defer one run loop so a move from edge into panel doesn't collapse the panel first.
-            DispatchQueue.main.async {
+            // Grace period to bridge cursor travel from edge trigger into the EXIF panel.
+            let task = DispatchWorkItem {
                 if !isExifPanelHoverOn {
                     isExifEdgeHoverOn = false
                 }
             }
+            exifEdgeExitTaskBox.set(task)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12, execute: task)
         }
     }
 
     private func handlePanelHover(_ entering: Bool) {
         if entering {
+            exifEdgeExitTaskBox.cancel()
             withAnimation(.easeInOut(duration: 0.15)) { isExifPanelHoverOn = true }
         } else {
             isExifPanelHoverOn = false
