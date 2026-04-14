@@ -37,7 +37,6 @@ struct ContentView: View {
     @State private var isExifForcedOn: Bool = false
     @State private var isExifEdgeHoverOn: Bool = false
     @State private var isExifPanelHoverOn: Bool = false
-    @State private var suppressEdgeHoverUntilExit: Bool = false
     @State private var exifDragOffset: CGSize = .zero
     @State private var exifDragLastOffset: CGSize = .zero
 
@@ -208,20 +207,16 @@ struct ContentView: View {
 
     private func handleEdgeHover(_ entering: Bool) {
         if entering {
-            if suppressEdgeHoverUntilExit { return }
             withAnimation(.easeInOut(duration: 0.15)) { isExifEdgeHoverOn = true }
         } else {
-            suppressEdgeHoverUntilExit = false
             isExifEdgeHoverOn = false
         }
     }
 
     private func handlePanelHover(_ entering: Bool) {
         if entering {
-            suppressEdgeHoverUntilExit = false
             withAnimation(.easeInOut(duration: 0.15)) { isExifPanelHoverOn = true }
         } else {
-            suppressEdgeHoverUntilExit = true
             isExifPanelHoverOn = false
             isExifEdgeHoverOn = false
         }
