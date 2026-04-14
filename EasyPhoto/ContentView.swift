@@ -125,7 +125,11 @@ struct ContentView: View {
                             )
                         )
                         .frame(width: panelW, height: panelH)
-                        .background(.ultraThinMaterial)
+                        .background(.ultraThinMaterial.opacity(0.42))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.white.opacity(0.20), lineWidth: 1)
+                        )
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                         .shadow(color: .black.opacity(0.25), radius: 16, x: -2, y: 2)
                         .position(

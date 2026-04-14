@@ -46,7 +46,7 @@ struct EasyPhotoApp: App {
             CommandMenu(loc.s(.menuLanguage)) {
                 ForEach(LocalizationManager.Language.allCases, id: \.rawValue) { lang in
                     Button {
-                        loc.currentLanguage = lang
+                        loc.setLanguageByUser(lang)
                     } label: {
                         HStack {
                             Text(lang.displayName(in: loc.currentLanguage))

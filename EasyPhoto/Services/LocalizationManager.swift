@@ -11,10 +11,11 @@ import Combine
 class LocalizationManager: ObservableObject {
     static let shared = LocalizationManager()
 
+    private static let languageKey = "appLanguage"
+    private static let languageOverriddenKey = "appLanguageUserOverridden"
+
     @Published var currentLanguage: Language {
-        didSet {
-            UserDefaults.standard.set(currentLanguage.rawValue, forKey: "appLanguage")
-        }
+        didSet { UserDefaults.standard.set(currentLanguage.rawValue, forKey: Self.languageKey) }
     }
 
     enum Language: String, CaseIterable {
@@ -32,15 +33,18 @@ class LocalizationManager: ObservableObject {
     }
 
     private init() {
-        // 优先读取用户手动选择的语言
-        if let saved = UserDefaults.standard.string(forKey: "appLanguage"),
+        let defaults = UserDefaults.standard
+        let userOverridden = defaults.bool(forKey: Self.languageOverriddenKey)
+        if userOverridden,
+           let saved = defaults.string(forKey: Self.languageKey),
            let lang = Language(rawValue: saved) {
             currentLanguage = lang
-        } else {
-            // 自动检测系统语言
-            let preferredLanguage = Locale.preferredLanguages.first ?? "en"
-            currentLanguage = preferredLanguage.hasPrefix("zh") ? .chinese : .english
+            return
         }
+
+        // 未被用户手动覆盖时，始终按系统语言默认。
+        let preferredLanguage = Locale.preferredLanguages.first ?? "en"
+        currentLanguage = preferredLanguage.hasPrefix("zh") ? .chinese : .english
     }
 
     // MARK: - 本地化字符串
@@ -50,6 +54,11 @@ class LocalizationManager: ObservableObject {
         case .chinese: return key.zh
         case .english: return key.en
         }
+    }
+
+    func setLanguageByUser(_ language: Language) {
+        currentLanguage = language
+        UserDefaults.standard.set(true, forKey: Self.languageOverriddenKey)
     }
 }
 
