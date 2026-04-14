@@ -101,16 +101,14 @@ struct ContentView: View {
                 }
 
                 // ── 右侧边缘触发区（不可见，20px 宽） ──
-                if !isExifVisible {
-                    HStack(spacing: 0) {
-                        Spacer()
-                        TrackingHoverView(
-                            onEntered: { handleEdgeHover(true) },
-                            onExited: { handleEdgeHover(false) }
-                        )
-                            .frame(width: 20)
-                            .contentShape(Rectangle())
-                    }
+                HStack(spacing: 0) {
+                    Spacer()
+                    TrackingHoverView(
+                        onEntered: { handleEdgeHover(true) },
+                        onExited: { handleEdgeHover(false) }
+                    )
+                        .frame(width: 36)
+                        .contentShape(Rectangle())
                 }
 
                 // ── 浮动 EXIF 面板 ─────────────────────
