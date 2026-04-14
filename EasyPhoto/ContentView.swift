@@ -25,6 +25,9 @@ struct ContentView: View {
     @ObservedObject private var pm = PurchaseManager.shared
     @State private var showingPaywall: Bool = false
 
+    // 键盘监听
+    @State private var keyMonitorBox = KeyMonitorBox()
+
     // EXIF 浮动面板
     @State private var isExifForcedOn: Bool = false
     @State private var isExifHoverOn: Bool = false
@@ -157,10 +160,8 @@ struct ContentView: View {
                 openFolder(folderURL)
             }
         }
-        .background(
-            // NSViewRepresentable：updateNSView 在每次 SwiftUI 渲染后更新回调，
-            // 确保闭包始终捕获最新状态；NSEvent monitor 不依赖 first responder
-            KeyboardHandlerBridge(
+        .onAppear {
+            keyMonitorBox.setup(
                 onLeft:      { navigateImage(direction: -1) },
                 onRight:     { navigateImage(direction:  1) },
                 onExif: {
@@ -171,7 +172,10 @@ struct ContentView: View {
                 },
                 onSlideshow: { toggleSlideshow() }
             )
-        )
+        }
+        .onDisappear {
+            keyMonitorBox.teardown()
+        }
     }
 
     // MARK: - 悬停
@@ -215,13 +219,14 @@ struct ContentView: View {
     // MARK: - 图片加载（无任何限制）
 
     private func loadImage(from url: URL) {
-        let resolved = url.resolvingSymlinksInPath()
-        _ = resolved.startAccessingSecurityScopedResource()
-        guard let image = NSImage(contentsOf: resolved) else { return }
+        guard let image = NSImage(contentsOf: url) else { return }
         currentImage = image
-        currentImageURL = resolved
-        metadata = ExifParser.parse(from: resolved)
-        if let index = folderImages.firstIndex(where: { $0.resolvingSymlinksInPath() == resolved }) {
+        currentImageURL = url
+        metadata = ExifParser.parse(from: url)
+        // 先精确匹配，再用路径比较兜底（处理符号链接差异）
+        if let index = folderImages.firstIndex(of: url) {
+            currentIndex = index
+        } else if let index = folderImages.firstIndex(where: { $0.path == url.path }) {
             currentIndex = index
         }
     }
@@ -232,9 +237,7 @@ struct ContentView: View {
                                               "gif", "bmp", "raw", "cr2", "cr3", "nef", "arw", "orf", "rw2", "dng"])
 
     private func loadFolderImages(from url: URL) {
-        let resolved = url.resolvingSymlinksInPath()
-        let folderURL = resolved.deletingLastPathComponent()
-        _ = folderURL.startAccessingSecurityScopedResource()
+        let folderURL = url.deletingLastPathComponent()
         guard let contents = try? FileManager.default.contentsOfDirectory(
             at: folderURL, includingPropertiesForKeys: [.contentTypeKey], options: [.skipsHiddenFiles]
         ) else { return }
@@ -243,16 +246,16 @@ struct ContentView: View {
             .filter { Self.imageExtensions.contains($0.pathExtension.lowercased()) }
             .sorted { $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending }
 
-        if let index = folderImages.firstIndex(where: { $0.resolvingSymlinksInPath() == resolved }) {
+        if let index = folderImages.firstIndex(of: url) {
+            currentIndex = index
+        } else if let index = folderImages.firstIndex(where: { $0.path == url.path }) {
             currentIndex = index
         }
     }
 
     private func openFolder(_ folderURL: URL) {
-        let resolved = folderURL.resolvingSymlinksInPath()
-        _ = resolved.startAccessingSecurityScopedResource()
         guard let contents = try? FileManager.default.contentsOfDirectory(
-            at: resolved, includingPropertiesForKeys: [.contentTypeKey], options: [.skipsHiddenFiles]
+            at: folderURL, includingPropertiesForKeys: [.contentTypeKey], options: [.skipsHiddenFiles]
         ) else { return }
 
         folderImages = contents
@@ -316,60 +319,34 @@ class HideTaskBox {
     func cancel() { task?.cancel(); task = nil }
 }
 
-// MARK: - 键盘监听（NSViewRepresentable，updateNSView 每次渲染后更新回调）
+// MARK: - 键盘监听（全局，不依赖 first responder）
 
-struct KeyboardHandlerBridge: NSViewRepresentable {
-    var onLeft:      () -> Void
-    var onRight:     () -> Void
-    var onExif:      () -> Void
-    var onSlideshow: () -> Void
-
-    func makeNSView(context: Context) -> NSView {
-        let view = KeyboardListenerView()
-        return view
-    }
-
-    func updateNSView(_ nsView: NSView, context: Context) {
-        guard let view = nsView as? KeyboardListenerView else { return }
-        view.onLeft      = onLeft
-        view.onRight     = onRight
-        view.onExif      = onExif
-        view.onSlideshow = onSlideshow
-        view.installMonitorIfNeeded()
-    }
-
-    static func dismantleNSView(_ nsView: NSView, coordinator: ()) {
-        (nsView as? KeyboardListenerView)?.removeMonitor()
-    }
-}
-
-class KeyboardListenerView: NSView {
-    var onLeft:      (() -> Void)?
-    var onRight:     (() -> Void)?
-    var onExif:      (() -> Void)?
-    var onSlideshow: (() -> Void)?
-
+class KeyMonitorBox {
     private var monitor: Any?
 
-    func installMonitorIfNeeded() {
+    func setup(
+        onLeft:      @escaping () -> Void,
+        onRight:     @escaping () -> Void,
+        onExif:      @escaping () -> Void,
+        onSlideshow: @escaping () -> Void
+    ) {
         guard monitor == nil else { return }
-        monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            guard let self = self else { return event }
+        monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
             switch event.keyCode {
-            case 123: self.onLeft?();      return nil
-            case 124: self.onRight?();     return nil
-            case 34:  self.onExif?();      return nil
-            case 1:   self.onSlideshow?(); return nil
+            case 123: onLeft();      return nil
+            case 124: onRight();     return nil
+            case 34:  onExif();      return nil
+            case 1:   onSlideshow(); return nil
             default:  return event
             }
         }
     }
 
-    func removeMonitor() {
+    func teardown() {
         if let m = monitor { NSEvent.removeMonitor(m); monitor = nil }
     }
 
-    deinit { removeMonitor() }
+    deinit { teardown() }
 }
 
 #Preview { ContentView() }

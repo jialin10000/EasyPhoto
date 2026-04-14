@@ -25,7 +25,9 @@ class PurchaseManager: ObservableObject {
     private let unlockKey = "easyPhotoUnlocked"
 
     private init() {
-        isUnlocked = UserDefaults.standard.bool(forKey: "easyPhotoUnlocked")
+        // TODO: 提交 App Store 前改回 UserDefaults 读取
+        isUnlocked = true
+        _ = UserDefaults.standard.bool(forKey: "easyPhotoUnlocked")
         Task {
             await loadProduct()
             await checkExistingEntitlements()
