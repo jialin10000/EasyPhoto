@@ -19,9 +19,11 @@ struct ContentView: View {
     @State private var slideshowActive: Bool = false
     @State private var slideshowTimer: Timer?
 
-    // 付费墙
+    // 付费 / 截断
     @ObservedObject private var pm = PurchaseManager.shared
     @State private var showingPaywall: Bool = false
+    @State private var isFolderTruncated: Bool = false   // 当前文件夹被截断
+    @State private var totalFolderCount: Int = 0         // 文件夹真实总数
 
     // EXIF 浮动面板状态
     @State private var isExifForcedOn: Bool = false    // I 键强制显示/隐藏
@@ -90,6 +92,35 @@ struct ContentView: View {
                         .stroke(Color.accentColor, lineWidth: 3)
                         .background(Color.accentColor.opacity(0.1))
                         .padding(8)
+                }
+
+                // ── 截断横幅（文件夹超过 50 张时显示在底部） ──
+                if isFolderTruncated && !pm.isUnlocked {
+                    VStack {
+                        Spacer()
+                        HStack(spacing: 12) {
+                            Image(systemName: "lock.fill")
+                                .font(.caption)
+                            Text("\(loc.s(.truncatedBanner))  (\(totalFolderCount) \(loc.currentLanguage == .chinese ? "张" : "total"))")
+                                .font(.caption)
+                            Spacer()
+                            Button {
+                                showingPaywall = true
+                            } label: {
+                                Text(loc.s(.truncatedUnlock))
+                                    .font(.caption.bold())
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 5)
+                                    .background(Color.accentColor)
+                                    .cornerRadius(6)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(.ultraThinMaterial)
+                    }
                 }
 
                 // ── 右侧边缘触发区（不可见，20px 宽） ──
@@ -168,6 +199,15 @@ struct ContentView: View {
                 openFolder(folderURL)
             }
         }
+        .onChange(of: pm.isUnlocked) { _, unlocked in
+            // 付费后立即重新加载文件夹（去掉截断限制）
+            if unlocked, let url = currentImageURL {
+                applyFolderImages(
+                    folderURL: url.deletingLastPathComponent(),
+                    selectURL: url
+                )
+            }
+        }
         .background(KeyboardEventHandler(
             onLeftArrow: { navigateImage(direction: -1) },
             onRightArrow: { navigateImage(direction: 1) },
@@ -236,14 +276,6 @@ struct ContentView: View {
     // MARK: - 图片加载
 
     private func loadImage(from url: URL) {
-        // 检查免费额度
-        guard pm.recordView() else {
-            withAnimation(.easeInOut(duration: 0.2)) {
-                showingPaywall = true
-            }
-            return
-        }
-
         guard let image = NSImage(contentsOf: url) else {
             print("无法加载图片: \(url.path)")
             return
@@ -262,7 +294,12 @@ struct ContentView: View {
 
     private func loadFolderImages(from url: URL) {
         let folderURL = url.deletingLastPathComponent()
+        applyFolderImages(folderURL: folderURL, selectURL: url)
+    }
+
+    private func applyFolderImages(folderURL: URL, selectURL: URL? = nil) {
         let fileManager = FileManager.default
+        let imageExtensions = ["jpg", "jpeg", "png", "heic", "heif", "tiff", "tif", "gif", "bmp", "raw", "cr2", "cr3", "nef", "arw", "orf", "rw2", "dng"]
 
         do {
             let contents = try fileManager.contentsOfDirectory(
@@ -271,13 +308,21 @@ struct ContentView: View {
                 options: [.skipsHiddenFiles]
             )
 
-            let imageExtensions = ["jpg", "jpeg", "png", "heic", "heif", "tiff", "tif", "gif", "bmp", "raw", "cr2", "cr3", "nef", "arw", "orf", "rw2", "dng"]
-
-            folderImages = contents.filter { fileURL in
+            let all = contents.filter { fileURL in
                 imageExtensions.contains(fileURL.pathExtension.lowercased())
             }.sorted { $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending }
 
-            if let index = folderImages.firstIndex(of: url) {
+            totalFolderCount = all.count
+
+            if !pm.isUnlocked && all.count > PurchaseManager.freeLimit {
+                folderImages = Array(all.prefix(PurchaseManager.freeLimit))
+                isFolderTruncated = true
+            } else {
+                folderImages = all
+                isFolderTruncated = false
+            }
+
+            if let url = selectURL, let index = folderImages.firstIndex(of: url) {
                 currentIndex = index
             }
 
@@ -335,26 +380,10 @@ struct ContentView: View {
     // MARK: - 打开文件夹
 
     private func openFolder(_ folderURL: URL) {
-        let fileManager = FileManager.default
-        let imageExtensions = ["jpg", "jpeg", "png", "heic", "heif", "tiff", "tif", "gif", "bmp", "raw", "cr2", "cr3", "nef", "arw", "orf", "rw2", "dng"]
-
-        do {
-            let contents = try fileManager.contentsOfDirectory(
-                at: folderURL,
-                includingPropertiesForKeys: [.contentTypeKey],
-                options: [.skipsHiddenFiles]
-            )
-
-            folderImages = contents.filter { fileURL in
-                imageExtensions.contains(fileURL.pathExtension.lowercased())
-            }.sorted { $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending }
-
-            if let first = folderImages.first {
-                currentIndex = 0
-                loadImage(from: first)
-            }
-        } catch {
-            print("无法读取文件夹: \(error)")
+        applyFolderImages(folderURL: folderURL)
+        if let first = folderImages.first {
+            currentIndex = 0
+            loadImage(from: first)
         }
     }
 

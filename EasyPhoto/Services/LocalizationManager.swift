@@ -92,7 +92,7 @@ enum StringKey {
     case exifExposureProgram
     case exifMeteringMode
 
-    // 付费墙
+    // 付费相关
     case paywallTitle
     case paywallSubtitle
     case paywallFeature1
@@ -101,6 +101,9 @@ enum StringKey {
     case paywallUnlock
     case paywallRestore
     case paywallLater
+    // 截断横幅
+    case truncatedBanner   // "仅显示前 50 张 · 共 %d 张"
+    case truncatedUnlock   // "解锁查看全部"
 
     // 菜单
     case menuLanguage
@@ -171,6 +174,8 @@ enum StringKey {
         case .paywallUnlock: return "一次性解锁"
         case .paywallRestore: return "恢复购买"
         case .paywallLater: return "稍后再说"
+        case .truncatedBanner: return "免费版仅显示前 50 张"
+        case .truncatedUnlock: return "解锁查看全部"
         case .menuLanguage: return "语言"
         case .menuHelp: return "使用帮助"
         case .menuAbout: return "关于 EasyPhoto"
@@ -239,6 +244,8 @@ enum StringKey {
         case .paywallUnlock: return "Unlock Once"
         case .paywallRestore: return "Restore Purchase"
         case .paywallLater: return "Maybe Later"
+        case .truncatedBanner: return "Free: showing first 50 photos"
+        case .truncatedUnlock: return "Unlock All"
         case .menuLanguage: return "Language"
         case .menuHelp: return "Help Guide"
         case .menuAbout: return "About EasyPhoto"

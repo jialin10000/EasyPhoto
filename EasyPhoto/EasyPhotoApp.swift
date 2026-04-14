@@ -17,6 +17,7 @@ struct EasyPhotoApp: App {
         WindowGroup {
             ContentView()
                 .environmentObject(loc)
+                .handlesExternalEvents(preferring: ["*"], allowing: ["*"])
                 .onOpenURL { url in
                     NotificationCenter.default.post(
                         name: .openImageFile,
@@ -24,6 +25,7 @@ struct EasyPhotoApp: App {
                     )
                 }
         }
+        .handlesExternalEvents(matching: ["*"])
         .windowStyle(.automatic)
         .commands {
             // File > Open 菜单
@@ -107,12 +109,41 @@ extension Notification.Name {
     static let openImageFolder = Notification.Name("openImageFolder")
 }
 
-// MARK: - AppDelegate 处理系统双击打开文件
+// MARK: - AppDelegate（单窗口模式：双击新图片复用已有窗口）
 
 class AppDelegate: NSObject, NSApplicationDelegate {
     func application(_ application: NSApplication, open urls: [URL]) {
         guard let url = urls.first else { return }
-        NotificationCenter.default.post(name: .openImageFile, object: url)
+
+        // 激活已有窗口
+        NSApp.activate(ignoringOtherApps: true)
+
+        // 延迟发送，确保窗口已就绪；同时关闭多余窗口
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            let contentWindows = NSApp.windows.filter { w in
+                w.isVisible && w.contentView != nil
+                && !w.title.contains("Help") && !w.title.contains("帮助")
+            }
+            // 保留第一个，关闭其余
+            if contentWindows.count > 1 {
+                for window in contentWindows.dropFirst() {
+                    window.close()
+                }
+            }
+            if let mainWindow = contentWindows.first {
+                mainWindow.makeKeyAndOrderFront(nil)
+            }
+
+            NotificationCenter.default.post(name: .openImageFile, object: url)
+        }
+    }
+
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        if flag {
+            NSApp.windows.first?.makeKeyAndOrderFront(nil)
+            return false
+        }
+        return true
     }
 }
 

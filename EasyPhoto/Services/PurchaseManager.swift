@@ -5,6 +5,9 @@
 //  StoreKit 2 内购管理器
 //  产品 ID: linjiateam.EasyPhoto.unlockAll（需在 App Store Connect 中创建）
 //
+//  免费规则：每个文件夹显示前 50 张，多于 50 张的目录需解锁才能看全部。
+//  文件夹 ≤ 50 张时，完全没有限制。
+//
 
 import StoreKit
 import Combine
@@ -13,7 +16,7 @@ import Combine
 class PurchaseManager: ObservableObject {
     static let shared = PurchaseManager()
     static let productID = "linjiateam.EasyPhoto.unlockAll"
-    static let freeViewLimit = 50
+    static let freeLimit = 50
 
     @Published var isUnlocked: Bool
     @Published var product: Product?
@@ -21,7 +24,6 @@ class PurchaseManager: ObservableObject {
     @Published var errorMessage: String?
 
     private let unlockKey = "easyPhotoUnlocked"
-    private let viewCountKey = "easyPhotoTotalViewed"
 
     private init() {
         isUnlocked = UserDefaults.standard.bool(forKey: "easyPhotoUnlocked")
@@ -30,25 +32,6 @@ class PurchaseManager: ObservableObject {
             await checkExistingEntitlements()
         }
         Task { await listenForTransactions() }
-    }
-
-    // MARK: - 浏览计数
-
-    var totalViewed: Int {
-        UserDefaults.standard.integer(forKey: viewCountKey)
-    }
-
-    var hasReachedLimit: Bool {
-        !isUnlocked && totalViewed >= Self.freeViewLimit
-    }
-
-    /// 每次加载新图片时调用。返回 false 表示已达上限，不应加载。
-    func recordView() -> Bool {
-        if isUnlocked { return true }
-        let current = totalViewed
-        if current >= Self.freeViewLimit { return false }
-        UserDefaults.standard.set(current + 1, forKey: viewCountKey)
-        return true
     }
 
     // MARK: - 商品加载
