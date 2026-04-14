@@ -4,6 +4,8 @@
 //
 //  主界面：全宽图片区 + 右侧悬浮 EXIF 面板
 //
+//  付费规则：浏览完全免费，幻灯片是 Pro 功能（$0.99 解锁）
+//
 
 import SwiftUI
 import UniformTypeIdentifiers
@@ -19,20 +21,15 @@ struct ContentView: View {
     @State private var slideshowActive: Bool = false
     @State private var slideshowTimer: Timer?
 
-    // 付费 / 截断
+    // 付费
     @ObservedObject private var pm = PurchaseManager.shared
     @State private var showingPaywall: Bool = false
-    @State private var isFolderTruncated: Bool = false   // 当前文件夹被截断
-    @State private var totalFolderCount: Int = 0         // 文件夹真实总数
 
-    // EXIF 浮动面板状态
-    @State private var isExifForcedOn: Bool = false    // I 键强制显示/隐藏
-    @State private var isExifHoverOn: Bool = false     // 鼠标悬停触发
-    @State private var exifDragOffset: CGSize = .zero  // 用户拖动的偏移
+    // EXIF 浮动面板
+    @State private var isExifForcedOn: Bool = false
+    @State private var isExifHoverOn: Bool = false
+    @State private var exifDragOffset: CGSize = .zero
     @State private var exifDragLastOffset: CGSize = .zero
-    private var hoverHideTask: DispatchWorkItem? = nil  // not @State, managed manually
-
-    // 鼠标离开后延迟隐藏的 work item，用 class wrapper 绕过 @State 限制
     @State private var hideTaskBox = HideTaskBox()
 
     var isExifVisible: Bool { isExifForcedOn || isExifHoverOn }
@@ -94,52 +91,19 @@ struct ContentView: View {
                         .padding(8)
                 }
 
-                // ── 截断横幅（文件夹超过 50 张时显示在底部） ──
-                if isFolderTruncated && !pm.isUnlocked {
-                    VStack {
-                        Spacer()
-                        HStack(spacing: 12) {
-                            Image(systemName: "lock.fill")
-                                .font(.caption)
-                            Text("\(loc.s(.truncatedBanner))  (\(totalFolderCount) \(loc.currentLanguage == .chinese ? "张" : "total"))")
-                                .font(.caption)
-                            Spacer()
-                            Button {
-                                showingPaywall = true
-                            } label: {
-                                Text(loc.s(.truncatedUnlock))
-                                    .font(.caption.bold())
-                                    .foregroundColor(.white)
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 5)
-                                    .background(Color.accentColor)
-                                    .cornerRadius(6)
-                            }
-                            .buttonStyle(.plain)
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .background(.ultraThinMaterial)
-                    }
-                }
-
                 // ── 右侧边缘触发区（不可见，20px 宽） ──
                 HStack(spacing: 0) {
                     Spacer()
                     Color.clear
                         .frame(width: 20)
                         .contentShape(Rectangle())
-                        .onHover { entering in
-                            handleEdgeHover(entering)
-                        }
+                        .onHover { handleEdgeHover($0) }
                 }
 
                 // ── 浮动 EXIF 面板 ─────────────────────
                 if isExifVisible {
                     let panelW: CGFloat = 280
                     let panelH: CGFloat = min(540, geo.size.height - 40)
-                    let defaultX = geo.size.width - panelW / 2 - 10
-                    let defaultY = geo.size.height / 2
 
                     ExifPanel(metadata: metadata, imageURL: currentImageURL)
                         .frame(width: panelW, height: panelH)
@@ -147,8 +111,8 @@ struct ContentView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                         .shadow(color: .black.opacity(0.25), radius: 16, x: -2, y: 2)
                         .position(
-                            x: defaultX + exifDragOffset.width,
-                            y: defaultY + exifDragOffset.height
+                            x: geo.size.width - panelW / 2 - 10 + exifDragOffset.width,
+                            y: geo.size.height / 2 + exifDragOffset.height
                         )
                         .gesture(
                             DragGesture()
@@ -162,15 +126,11 @@ struct ContentView: View {
                                     exifDragLastOffset = exifDragOffset
                                 }
                         )
-                        .onHover { entering in
-                            handlePanelHover(entering)
-                        }
-                        .transition(
-                            .asymmetric(
-                                insertion: .opacity.combined(with: .move(edge: .trailing)),
-                                removal: .opacity
-                            )
-                        )
+                        .onHover { handlePanelHover($0) }
+                        .transition(.asymmetric(
+                            insertion: .opacity.combined(with: .move(edge: .trailing)),
+                            removal: .opacity
+                        ))
                 }
 
                 // ── 付费墙 ─────────────────────────────
@@ -180,13 +140,11 @@ struct ContentView: View {
                 }
             }
             .animation(.easeInOut(duration: 0.2), value: isExifVisible)
+            .animation(.easeInOut(duration: 0.2), value: showingPaywall)
         }
         .frame(minWidth: 800, minHeight: 500)
         .onDrop(of: [.fileURL], isTargeted: $isDragging) { providers in
             handleDrop(providers: providers)
-        }
-        .onAppear {
-            setupKeyboardShortcuts()
         }
         .onReceive(NotificationCenter.default.publisher(for: .openImageFile)) { notification in
             if let url = notification.object as? URL {
@@ -199,22 +157,12 @@ struct ContentView: View {
                 openFolder(folderURL)
             }
         }
-        .onChange(of: pm.isUnlocked) { _, unlocked in
-            // 付费后立即重新加载文件夹（去掉截断限制）
-            if unlocked, let url = currentImageURL {
-                applyFolderImages(
-                    folderURL: url.deletingLastPathComponent(),
-                    selectURL: url
-                )
-            }
-        }
         .background(KeyboardEventHandler(
             onLeftArrow: { navigateImage(direction: -1) },
             onRightArrow: { navigateImage(direction: 1) },
             onToggleExif: {
                 withAnimation(.easeInOut(duration: 0.2)) {
                     isExifForcedOn.toggle()
-                    // 强制开启时，取消 hover 计时器
                     if isExifForcedOn { hideTaskBox.cancel() }
                 }
             },
@@ -222,112 +170,89 @@ struct ContentView: View {
         ))
     }
 
-    // MARK: - 悬停逻辑
+    // MARK: - 悬停
 
     private func handleEdgeHover(_ entering: Bool) {
         if entering {
             hideTaskBox.cancel()
-            withAnimation(.easeInOut(duration: 0.2)) {
-                isExifHoverOn = true
-            }
+            withAnimation(.easeInOut(duration: 0.2)) { isExifHoverOn = true }
         } else {
             scheduleHide()
         }
     }
 
     private func handlePanelHover(_ entering: Bool) {
-        if entering {
-            hideTaskBox.cancel()
-        } else {
-            scheduleHide()
-        }
+        if entering { hideTaskBox.cancel() } else { scheduleHide() }
     }
 
     private func scheduleHide() {
         let task = DispatchWorkItem {
-            withAnimation(.easeInOut(duration: 0.2)) {
-                isExifHoverOn = false
-            }
+            withAnimation(.easeInOut(duration: 0.2)) { isExifHoverOn = false }
         }
         hideTaskBox.set(task)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4, execute: task)
     }
 
-    // MARK: - 拖拽处理
+    // MARK: - 拖拽
 
     private func handleDrop(providers: [NSItemProvider]) -> Bool {
         guard let provider = providers.first else { return false }
-
-        provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier, options: nil) { item, error in
+        provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier, options: nil) { item, _ in
             guard let data = item as? Data,
-                  let url = URL(dataRepresentation: data, relativeTo: nil) else {
-                return
-            }
-
+                  let url = URL(dataRepresentation: data, relativeTo: nil) else { return }
             DispatchQueue.main.async {
                 loadImage(from: url)
                 loadFolderImages(from: url)
             }
         }
-
         return true
     }
 
-    // MARK: - 图片加载
+    // MARK: - 图片加载（无任何限制）
 
     private func loadImage(from url: URL) {
-        guard let image = NSImage(contentsOf: url) else {
-            print("无法加载图片: \(url.path)")
-            return
-        }
-
+        guard let image = NSImage(contentsOf: url) else { return }
         currentImage = image
         currentImageURL = url
         metadata = ExifParser.parse(from: url)
+        if let index = folderImages.firstIndex(of: url) {
+            currentIndex = index
+        }
+    }
+
+    // MARK: - 文件夹（加载全部，无截断）
+
+    private func loadFolderImages(from url: URL) {
+        let folderURL = url.deletingLastPathComponent()
+        let imageExtensions = ["jpg", "jpeg", "png", "heic", "heif", "tiff", "tif",
+                               "gif", "bmp", "raw", "cr2", "cr3", "nef", "arw", "orf", "rw2", "dng"]
+        guard let contents = try? FileManager.default.contentsOfDirectory(
+            at: folderURL, includingPropertiesForKeys: [.contentTypeKey], options: [.skipsHiddenFiles]
+        ) else { return }
+
+        folderImages = contents
+            .filter { imageExtensions.contains($0.pathExtension.lowercased()) }
+            .sorted { $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending }
 
         if let index = folderImages.firstIndex(of: url) {
             currentIndex = index
         }
     }
 
-    // MARK: - 文件夹图片列表
+    private func openFolder(_ folderURL: URL) {
+        let imageExtensions = ["jpg", "jpeg", "png", "heic", "heif", "tiff", "tif",
+                               "gif", "bmp", "raw", "cr2", "cr3", "nef", "arw", "orf", "rw2", "dng"]
+        guard let contents = try? FileManager.default.contentsOfDirectory(
+            at: folderURL, includingPropertiesForKeys: [.contentTypeKey], options: [.skipsHiddenFiles]
+        ) else { return }
 
-    private func loadFolderImages(from url: URL) {
-        let folderURL = url.deletingLastPathComponent()
-        applyFolderImages(folderURL: folderURL, selectURL: url)
-    }
+        folderImages = contents
+            .filter { imageExtensions.contains($0.pathExtension.lowercased()) }
+            .sorted { $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending }
 
-    private func applyFolderImages(folderURL: URL, selectURL: URL? = nil) {
-        let fileManager = FileManager.default
-        let imageExtensions = ["jpg", "jpeg", "png", "heic", "heif", "tiff", "tif", "gif", "bmp", "raw", "cr2", "cr3", "nef", "arw", "orf", "rw2", "dng"]
-
-        do {
-            let contents = try fileManager.contentsOfDirectory(
-                at: folderURL,
-                includingPropertiesForKeys: [.contentTypeKey],
-                options: [.skipsHiddenFiles]
-            )
-
-            let all = contents.filter { fileURL in
-                imageExtensions.contains(fileURL.pathExtension.lowercased())
-            }.sorted { $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending }
-
-            totalFolderCount = all.count
-
-            if !pm.isUnlocked && all.count > PurchaseManager.freeLimit {
-                folderImages = Array(all.prefix(PurchaseManager.freeLimit))
-                isFolderTruncated = true
-            } else {
-                folderImages = all
-                isFolderTruncated = false
-            }
-
-            if let url = selectURL, let index = folderImages.firstIndex(of: url) {
-                currentIndex = index
-            }
-
-        } catch {
-            print("无法读取文件夹: \(error)")
+        if let first = folderImages.first {
+            currentIndex = 0
+            loadImage(from: first)
         }
     }
 
@@ -335,23 +260,24 @@ struct ContentView: View {
 
     private func navigateImage(direction: Int) {
         guard !folderImages.isEmpty else { return }
-
         let newIndex = currentIndex + direction
-
-        if newIndex >= 0 && newIndex < folderImages.count {
-            currentIndex = newIndex
-            loadImage(from: folderImages[currentIndex])
-        }
+        guard newIndex >= 0 && newIndex < folderImages.count else { return }
+        currentIndex = newIndex
+        loadImage(from: folderImages[currentIndex])
     }
 
-    // MARK: - 幻灯片
+    // MARK: - 幻灯片（Pro 功能，未付费弹付费墙）
 
     private func toggleSlideshow() {
         if slideshowActive {
             stopSlideshow()
-        } else {
-            startSlideshow()
+            return
         }
+        guard pm.isUnlocked else {
+            withAnimation(.easeInOut(duration: 0.2)) { showingPaywall = true }
+            return
+        }
+        startSlideshow()
     }
 
     private func startSlideshow() {
@@ -359,14 +285,9 @@ struct ContentView: View {
         slideshowActive = true
         slideshowTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { _ in
             DispatchQueue.main.async {
-                let nextIndex = currentIndex + 1
-                if nextIndex < folderImages.count {
-                    currentIndex = nextIndex
-                    loadImage(from: folderImages[currentIndex])
-                } else {
-                    currentIndex = 0
-                    loadImage(from: folderImages[currentIndex])
-                }
+                let next = (currentIndex + 1) % folderImages.count
+                currentIndex = next
+                loadImage(from: folderImages[next])
             }
         }
     }
@@ -376,39 +297,17 @@ struct ContentView: View {
         slideshowTimer?.invalidate()
         slideshowTimer = nil
     }
-
-    // MARK: - 打开文件夹
-
-    private func openFolder(_ folderURL: URL) {
-        applyFolderImages(folderURL: folderURL)
-        if let first = folderImages.first {
-            currentIndex = 0
-            loadImage(from: first)
-        }
-    }
-
-    private func setupKeyboardShortcuts() {
-        // 键盘事件在 KeyboardEventHandler 中处理
-    }
 }
 
-// MARK: - 延迟隐藏任务容器（绕过 @State 不能持有 DispatchWorkItem 的限制）
+// MARK: - HideTaskBox
 
 class HideTaskBox {
     private var task: DispatchWorkItem?
-
-    func set(_ newTask: DispatchWorkItem) {
-        task?.cancel()
-        task = newTask
-    }
-
-    func cancel() {
-        task?.cancel()
-        task = nil
-    }
+    func set(_ newTask: DispatchWorkItem) { task?.cancel(); task = newTask }
+    func cancel() { task?.cancel(); task = nil }
 }
 
-// MARK: - 键盘事件处理
+// MARK: - 键盘事件
 
 struct KeyboardEventHandler: NSViewRepresentable {
     var onLeftArrow: () -> Void
@@ -418,18 +317,14 @@ struct KeyboardEventHandler: NSViewRepresentable {
 
     func makeNSView(context: Context) -> KeyboardView {
         let view = KeyboardView()
-        view.onLeftArrow = onLeftArrow
-        view.onRightArrow = onRightArrow
-        view.onToggleExif = onToggleExif
-        view.onToggleSlideshow = onToggleSlideshow
+        view.onLeftArrow = onLeftArrow; view.onRightArrow = onRightArrow
+        view.onToggleExif = onToggleExif; view.onToggleSlideshow = onToggleSlideshow
         return view
     }
 
     func updateNSView(_ nsView: KeyboardView, context: Context) {
-        nsView.onLeftArrow = onLeftArrow
-        nsView.onRightArrow = onRightArrow
-        nsView.onToggleExif = onToggleExif
-        nsView.onToggleSlideshow = onToggleSlideshow
+        nsView.onLeftArrow = onLeftArrow; nsView.onRightArrow = onRightArrow
+        nsView.onToggleExif = onToggleExif; nsView.onToggleSlideshow = onToggleSlideshow
     }
 }
 
@@ -443,16 +338,11 @@ class KeyboardView: NSView {
 
     override func keyDown(with event: NSEvent) {
         switch event.keyCode {
-        case 123: // 左箭头
-            onLeftArrow?()
-        case 124: // 右箭头
-            onRightArrow?()
-        case 34: // I 键
-            onToggleExif?()
-        case 1: // S 键
-            onToggleSlideshow?()
-        default:
-            super.keyDown(with: event)
+        case 123: onLeftArrow?()
+        case 124: onRightArrow?()
+        case 34:  onToggleExif?()
+        case 1:   onToggleSlideshow?()
+        default:  super.keyDown(with: event)
         }
     }
 
@@ -462,6 +352,4 @@ class KeyboardView: NSView {
     }
 }
 
-#Preview {
-    ContentView()
-}
+#Preview { ContentView() }

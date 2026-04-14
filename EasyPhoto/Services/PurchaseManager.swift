@@ -16,7 +16,6 @@ import Combine
 class PurchaseManager: ObservableObject {
     static let shared = PurchaseManager()
     static let productID = "linjiateam.EasyPhoto.unlockAll"
-    static let freeLimit = 50
 
     @Published var isUnlocked: Bool
     @Published var product: Product?
