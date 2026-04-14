@@ -17,6 +17,7 @@
 		B00000000000000000000008 /* HelpView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000008 /* HelpView.swift */; };
 		B00000000000000000000009 /* ImageViewer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000009 /* ImageViewer.swift */; };
 		B0000000000000000000000A /* PaywallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0000000000000000000000A /* PaywallView.swift */; };
+		B0000000000000000000000B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F0000000000000000000000B /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -30,6 +31,7 @@
 		F00000000000000000000008 /* HelpView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EasyPhoto/Views/HelpView.swift; sourceTree = "<group>"; };
 		F00000000000000000000009 /* ImageViewer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EasyPhoto/Views/ImageViewer.swift; sourceTree = "<group>"; };
 		F0000000000000000000000A /* PaywallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EasyPhoto/Views/PaywallView.swift; sourceTree = "<group>"; };
+		F0000000000000000000000B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = EasyPhoto/Assets.xcassets; sourceTree = "<group>"; };
 		3AFE98682F189152002CEF14 /* EasyPhoto.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = EasyPhoto.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -129,6 +131,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B0000000000000000000000B /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

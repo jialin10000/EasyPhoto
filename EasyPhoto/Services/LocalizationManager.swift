@@ -62,6 +62,7 @@ enum StringKey {
     // 幻灯片
     case slideshowPlaying
     case slideshowStop
+    case slideshowStartHint
 
     // EXIF 面板
     case exifFile
@@ -139,6 +140,7 @@ enum StringKey {
         case .shortcutHint: return "快捷键：← → 切换图片 | 点击左/右侧切换 | S 幻灯片 | I 信息 | F 全屏"
         case .slideshowPlaying: return "▶ 幻灯片播放中"
         case .slideshowStop: return "按 S 停止"
+        case .slideshowStartHint: return "按 S 开始幻灯片"
         case .exifFile: return "文件"
         case .exifCamera: return "相机"
         case .exifLens: return "镜头"
@@ -209,6 +211,7 @@ enum StringKey {
         case .shortcutHint: return "Shortcuts: ← → switch | Click left/right side | S slideshow | I info | F fullscreen"
         case .slideshowPlaying: return "▶ Slideshow playing"
         case .slideshowStop: return "Press S to stop"
+        case .slideshowStartHint: return "Press S to start slideshow"
         case .exifFile: return "File"
         case .exifCamera: return "Camera"
         case .exifLens: return "Lens"

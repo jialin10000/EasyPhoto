@@ -20,6 +20,10 @@ struct ContentView: View {
     @State private var currentIndex: Int = 0
     @State private var slideshowActive: Bool = false
     @State private var slideshowTimer: Timer?
+    @State private var showSlideshowHint: Bool = false
+    @State private var showImageCountHint: Bool = false
+    @State private var slideshowHintTaskBox = HideTaskBox()
+    @State private var imageCountHintTaskBox = HideTaskBox()
 
     // 付费
     @ObservedObject private var pm = PurchaseManager.shared
@@ -46,7 +50,7 @@ struct ContentView: View {
                 // ── 图片区（全宽） ─────────────────────
                 if let image = currentImage {
                     ImageViewer(image: image, onNavigate: { direction in
-                        navigateImage(direction: direction)
+                        navigateImage(direction: direction, userInitiated: true)
                     })
                 } else {
                     VStack(spacing: 16) {
@@ -70,11 +74,11 @@ struct ContentView: View {
                 }
 
                 // ── 幻灯片指示 ─────────────────────────
-                if slideshowActive {
+                if showSlideshowHint && !slideshowActive {
                     VStack {
                         HStack {
                             Spacer()
-                            Text("\(loc.s(.slideshowPlaying)) (\(loc.s(.slideshowStop)))")
+                            Text(loc.s(.slideshowStartHint))
                                 .font(.caption)
                                 .padding(.horizontal, 12)
                                 .padding(.vertical, 6)
@@ -137,7 +141,7 @@ struct ContentView: View {
                 }
 
                 // ── 调试信息（提交前删除）────────────────
-                if !folderImages.isEmpty {
+                if showImageCountHint && !folderImages.isEmpty && !slideshowActive {
                     VStack {
                         Spacer()
                         HStack {
@@ -168,7 +172,7 @@ struct ContentView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .openImageFile)) { notification in
             if let url = notification.object as? URL {
-                loadImage(from: url)
+                loadImage(from: url, showCountHint: true)
                 loadFolderImages(from: url)
             }
         }
@@ -179,8 +183,8 @@ struct ContentView: View {
         }
         .onAppear {
             keyMonitorBox.setup(
-                onLeft:      { navigateImage(direction: -1) },
-                onRight:     { navigateImage(direction:  1) },
+                onLeft:      { navigateImage(direction: -1, userInitiated: true) },
+                onRight:     { navigateImage(direction:  1, userInitiated: true) },
                 onExif: {
                     withAnimation(.easeInOut(duration: 0.2)) {
                         isExifForcedOn.toggle()
@@ -227,7 +231,7 @@ struct ContentView: View {
             guard let data = item as? Data,
                   let url = URL(dataRepresentation: data, relativeTo: nil) else { return }
             DispatchQueue.main.async {
-                loadImage(from: url)
+                loadImage(from: url, showCountHint: true)
                 loadFolderImages(from: url)
             }
         }
@@ -236,7 +240,7 @@ struct ContentView: View {
 
     // MARK: - 图片加载（无任何限制）
 
-    private func loadImage(from url: URL) {
+    private func loadImage(from url: URL, showCountHint: Bool = false) {
         let scoped = url.startAccessingSecurityScopedResource()
         defer {
             if scoped { url.stopAccessingSecurityScopedResource() }
@@ -251,6 +255,11 @@ struct ContentView: View {
             currentIndex = index
         } else if let index = folderImages.firstIndex(where: { $0.path == url.path }) {
             currentIndex = index
+        }
+
+        if showCountHint {
+            showSlideshowHintTemporarily()
+            showImageCountHintTemporarily()
         }
     }
 
@@ -275,7 +284,7 @@ struct ContentView: View {
 
         if let first = folderImages.first {
             currentIndex = 0
-            loadImage(from: first)
+            loadImage(from: first, showCountHint: true)
         }
     }
 
@@ -298,7 +307,7 @@ struct ContentView: View {
 
     // MARK: - 图片导航
 
-    private func navigateImage(direction: Int) {
+    private func navigateImage(direction: Int, userInitiated: Bool) {
         guard !folderImages.isEmpty else { return }
 
         // 用当前显示的 URL 实时查位置，不依赖可能过时的 currentIndex
@@ -314,14 +323,14 @@ struct ContentView: View {
         let newIndex = baseIndex + direction
         guard newIndex >= 0 && newIndex < folderImages.count else { return }
         currentIndex = newIndex
-        loadImage(from: folderImages[newIndex])
+        loadImage(from: folderImages[newIndex], showCountHint: userInitiated)
     }
 
     // MARK: - 幻灯片（Pro 功能，未付费弹付费墙）
 
     private func toggleSlideshow() {
         if slideshowActive {
-            stopSlideshow()
+            stopSlideshow(userInitiated: true)
             return
         }
         guard pm.isUnlocked else {
@@ -333,25 +342,65 @@ struct ContentView: View {
 
     private func startSlideshow() {
         guard !folderImages.isEmpty else { return }
+        hideAllHints()
         slideshowActive = true
         slideshowTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { _ in
             DispatchQueue.main.async {
                 let next = (currentIndex + 1) % folderImages.count
                 currentIndex = next
-                loadImage(from: folderImages[next])
+                loadImage(from: folderImages[next], showCountHint: false)
             }
         }
     }
 
-    private func stopSlideshow() {
+    private func stopSlideshow(userInitiated: Bool = false) {
         slideshowActive = false
         slideshowTimer?.invalidate()
         slideshowTimer = nil
+
+        if userInitiated {
+            showSlideshowHintTemporarily()
+            showImageCountHintTemporarily()
+        }
     }
 
     private func toggleFullscreen() {
         if let window = NSApp.keyWindow ?? NSApp.mainWindow ?? NSApp.windows.first {
             window.toggleFullScreen(nil)
+        }
+    }
+
+    private func showSlideshowHintTemporarily() {
+        slideshowHintTaskBox.cancel()
+        withAnimation(.easeInOut(duration: 0.2)) { showSlideshowHint = true }
+
+        let task = DispatchWorkItem {
+            withAnimation(.easeInOut(duration: 0.2)) { showSlideshowHint = false }
+        }
+        slideshowHintTaskBox.set(task)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.8, execute: task)
+    }
+
+    private func showImageCountHintTemporarily() {
+        guard !slideshowActive, !folderImages.isEmpty else { return }
+
+        imageCountHintTaskBox.cancel()
+        withAnimation(.easeInOut(duration: 0.2)) { showImageCountHint = true }
+
+        let task = DispatchWorkItem {
+            withAnimation(.easeInOut(duration: 0.2)) { showImageCountHint = false }
+        }
+        imageCountHintTaskBox.set(task)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.8, execute: task)
+    }
+
+    private func hideAllHints() {
+        slideshowHintTaskBox.cancel()
+        imageCountHintTaskBox.cancel()
+
+        withAnimation(.easeInOut(duration: 0.2)) {
+            showSlideshowHint = false
+            showImageCountHint = false
         }
     }
 }
