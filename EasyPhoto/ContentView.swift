@@ -103,10 +103,12 @@ struct ContentView: View {
                 if !isExifVisible {
                     HStack(spacing: 0) {
                         Spacer()
-                        Color.clear
+                        TrackingHoverView(
+                            onEntered: { handleEdgeHover(true) },
+                            onExited: { handleEdgeHover(false) }
+                        )
                             .frame(width: 20)
                             .contentShape(Rectangle())
-                            .onHover { handleEdgeHover($0) }
                     }
                 }
 
@@ -116,6 +118,12 @@ struct ContentView: View {
                     let panelH: CGFloat = min(540, geo.size.height - 40)
 
                     ExifPanel(metadata: metadata, imageURL: currentImageURL)
+                        .overlay(
+                            TrackingHoverView(
+                                onEntered: { handlePanelHover(true) },
+                                onExited: { handlePanelHover(false) }
+                            )
+                        )
                         .frame(width: panelW, height: panelH)
                         .background(.ultraThinMaterial)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
@@ -136,7 +144,6 @@ struct ContentView: View {
                                     exifDragLastOffset = exifDragOffset
                                 }
                         )
-                        .onHover { handlePanelHover($0) }
                         .transition(.asymmetric(
                             insertion: .opacity.combined(with: .move(edge: .trailing)),
                             removal: .identity
@@ -209,7 +216,12 @@ struct ContentView: View {
         if entering {
             withAnimation(.easeInOut(duration: 0.15)) { isExifEdgeHoverOn = true }
         } else {
-            isExifEdgeHoverOn = false
+            // Defer one run loop so a move from edge into panel doesn't collapse the panel first.
+            DispatchQueue.main.async {
+                if !isExifPanelHoverOn {
+                    isExifEdgeHoverOn = false
+                }
+            }
         }
     }
 
@@ -405,6 +417,55 @@ struct ContentView: View {
 
     private func validatedSlideshowInterval(from value: Int) -> Int {
         min(max(value, 1), 9)
+    }
+}
+
+private struct TrackingHoverView: NSViewRepresentable {
+    let onEntered: () -> Void
+    let onExited: () -> Void
+
+    func makeNSView(context: Context) -> TrackingNSView {
+        let view = TrackingNSView()
+        view.onEntered = onEntered
+        view.onExited = onExited
+        return view
+    }
+
+    func updateNSView(_ nsView: TrackingNSView, context: Context) {
+        nsView.onEntered = onEntered
+        nsView.onExited = onExited
+        nsView.updateTrackingAreas()
+    }
+}
+
+private final class TrackingNSView: NSView {
+    var onEntered: (() -> Void)?
+    var onExited: (() -> Void)?
+    private var trackingAreaRef: NSTrackingArea?
+
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+
+        if let trackingAreaRef {
+            removeTrackingArea(trackingAreaRef)
+        }
+
+        let options: NSTrackingArea.Options = [
+            .mouseEnteredAndExited,
+            .activeInKeyWindow,
+            .inVisibleRect
+        ]
+        let trackingArea = NSTrackingArea(rect: bounds, options: options, owner: self, userInfo: nil)
+        addTrackingArea(trackingArea)
+        trackingAreaRef = trackingArea
+    }
+
+    override func mouseEntered(with event: NSEvent) {
+        onEntered?()
+    }
+
+    override func mouseExited(with event: NSEvent) {
+        onExited?()
     }
 }
 

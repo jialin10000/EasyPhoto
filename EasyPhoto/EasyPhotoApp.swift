@@ -113,8 +113,8 @@ struct EasyPhotoApp: App {
         alert.messageText = loc.s(.menuSlideshowInterval)
         alert.informativeText = "\(loc.s(.slideshowInterval)): 1-9 \(loc.s(.slideshowSeconds))"
         alert.alertStyle = .informational
-        alert.addButton(withTitle: "OK")
-        alert.addButton(withTitle: "Cancel")
+        alert.addButton(withTitle: loc.s(.dialogConfirm))
+        alert.addButton(withTitle: loc.s(.dialogCancel))
 
         let textField = NSTextField(frame: NSRect(x: 0, y: 0, width: 120, height: 24))
         textField.stringValue = String(min(max(slideshowIntervalSeconds, 1), 9))
