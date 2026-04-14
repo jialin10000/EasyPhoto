@@ -35,13 +35,14 @@ struct ContentView: View {
 
     // EXIF 浮动面板
     @State private var isExifForcedOn: Bool = false
-    @State private var isExifEdgeHoverOn: Bool = false
-    @State private var isExifPanelHoverOn: Bool = false
-    @State private var exifEdgeExitTaskBox = HideTaskBox()
+    @State private var isPointerInExifEdge: Bool = false
+    @State private var isPointerInExifPanel: Bool = false
+    @State private var isExifHoverVisible: Bool = false
+    @State private var exifHideTaskBox = HideTaskBox()
     @State private var exifDragOffset: CGSize = .zero
     @State private var exifDragLastOffset: CGSize = .zero
 
-    var isExifVisible: Bool { isExifForcedOn || isExifEdgeHoverOn || isExifPanelHoverOn }
+    var isExifVisible: Bool { isExifForcedOn || isExifHoverVisible }
 
     var body: some View {
         GeometryReader { geo in
@@ -143,10 +144,7 @@ struct ContentView: View {
                                     exifDragLastOffset = exifDragOffset
                                 }
                         )
-                        .transition(.asymmetric(
-                            insertion: .opacity.combined(with: .move(edge: .trailing)),
-                            removal: .identity
-                        ))
+                        .transition(.opacity)
                 }
 
                 // ── 调试信息（提交前删除）────────────────
@@ -196,8 +194,12 @@ struct ContentView: View {
                 onLeft:      { navigateImage(direction: -1, userInitiated: true) },
                 onRight:     { navigateImage(direction:  1, userInitiated: true) },
                 onExif: {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        isExifForcedOn.toggle()
+                    let newValue = !isExifForcedOn
+                    withAnimation(.easeInOut(duration: 0.2)) { isExifForcedOn = newValue }
+                    if newValue {
+                        exifHideTaskBox.cancel()
+                    } else {
+                        scheduleExifHideIfNeeded()
                     }
                 },
                 onSlideshow: { toggleSlideshow() },
@@ -213,28 +215,39 @@ struct ContentView: View {
 
     private func handleEdgeHover(_ entering: Bool) {
         if entering {
-            exifEdgeExitTaskBox.cancel()
-            withAnimation(.easeInOut(duration: 0.15)) { isExifEdgeHoverOn = true }
+            isPointerInExifEdge = true
+            showExifFromHover()
         } else {
-            // Grace period to bridge cursor travel from edge trigger into the EXIF panel.
-            let task = DispatchWorkItem {
-                if !isExifPanelHoverOn {
-                    isExifEdgeHoverOn = false
-                }
-            }
-            exifEdgeExitTaskBox.set(task)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12, execute: task)
+            isPointerInExifEdge = false
+            scheduleExifHideIfNeeded()
         }
     }
 
     private func handlePanelHover(_ entering: Bool) {
         if entering {
-            exifEdgeExitTaskBox.cancel()
-            withAnimation(.easeInOut(duration: 0.15)) { isExifPanelHoverOn = true }
+            isPointerInExifPanel = true
+            showExifFromHover()
         } else {
-            isExifPanelHoverOn = false
-            isExifEdgeHoverOn = false
+            isPointerInExifPanel = false
+            scheduleExifHideIfNeeded()
         }
+    }
+
+    private func showExifFromHover() {
+        exifHideTaskBox.cancel()
+        if !isExifHoverVisible {
+            withAnimation(.easeInOut(duration: 0.12)) { isExifHoverVisible = true }
+        }
+    }
+
+    private func scheduleExifHideIfNeeded() {
+        let task = DispatchWorkItem {
+            if !isPointerInExifEdge && !isPointerInExifPanel && !isExifForcedOn {
+                isExifHoverVisible = false
+            }
+        }
+        exifHideTaskBox.set(task)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.18, execute: task)
     }
 
     // MARK: - 拖拽
