@@ -46,7 +46,9 @@ struct EasyPhotoApp: App {
             CommandMenu(loc.s(.menuLanguage)) {
                 ForEach(LocalizationManager.Language.allCases, id: \.rawValue) { lang in
                     Button {
+                        guard loc.currentLanguage != lang else { return }
                         loc.setLanguageByUser(lang)
+                        relaunchApp()
                     } label: {
                         HStack {
                             Text(lang.displayName(in: loc.currentLanguage))
@@ -126,6 +128,14 @@ struct EasyPhotoApp: App {
 
         let parsed = Int(textField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)) ?? slideshowIntervalSeconds
         slideshowIntervalSeconds = min(max(parsed, 1), 9)
+    }
+
+    private func relaunchApp() {
+        let appURL = Bundle.main.bundleURL
+        let configuration = NSWorkspace.OpenConfiguration()
+        NSWorkspace.shared.openApplication(at: appURL, configuration: configuration) { _, _ in
+            NSApp.terminate(nil)
+        }
     }
 }
 

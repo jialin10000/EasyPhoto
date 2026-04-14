@@ -13,6 +13,7 @@ class LocalizationManager: ObservableObject {
 
     private static let languageKey = "appLanguage"
     private static let languageOverriddenKey = "appLanguageUserOverridden"
+    private static let appleLanguagesKey = "AppleLanguages"
 
     @Published var currentLanguage: Language {
         didSet { UserDefaults.standard.set(currentLanguage.rawValue, forKey: Self.languageKey) }
@@ -39,12 +40,14 @@ class LocalizationManager: ObservableObject {
            let saved = defaults.string(forKey: Self.languageKey),
            let lang = Language(rawValue: saved) {
             currentLanguage = lang
+            applyAppleLanguageOverride(for: lang)
             return
         }
 
         // 未被用户手动覆盖时，始终按系统语言默认。
         let preferredLanguage = Locale.preferredLanguages.first ?? "en"
         currentLanguage = preferredLanguage.hasPrefix("zh") ? .chinese : .english
+        clearAppleLanguageOverride()
     }
 
     // MARK: - 本地化字符串
@@ -58,7 +61,24 @@ class LocalizationManager: ObservableObject {
 
     func setLanguageByUser(_ language: Language) {
         currentLanguage = language
-        UserDefaults.standard.set(true, forKey: Self.languageOverriddenKey)
+        let defaults = UserDefaults.standard
+        defaults.set(true, forKey: Self.languageOverriddenKey)
+        applyAppleLanguageOverride(for: language)
+    }
+
+    private func applyAppleLanguageOverride(for language: Language) {
+        let value: String
+        switch language {
+        case .chinese:
+            value = "zh-Hans"
+        case .english:
+            value = "en"
+        }
+        UserDefaults.standard.set([value], forKey: Self.appleLanguagesKey)
+    }
+
+    private func clearAppleLanguageOverride() {
+        UserDefaults.standard.removeObject(forKey: Self.appleLanguagesKey)
     }
 }
 

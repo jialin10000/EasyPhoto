@@ -59,9 +59,9 @@ struct HelpView: View {
                     shortcutRow(key: "S", desc: loc.s(.helpShortcutSlideshow))
                     shortcutRow(key: "I", desc: loc.s(.helpShortcutExif))
                     shortcutRow(key: "F", desc: loc.s(.helpShortcutFullscreen))
-                    shortcutRow(key: "⇧ Click", desc: loc.s(.helpShortcutZoomIn))
-                    shortcutRow(key: "⇧⇧ Click", desc: loc.s(.helpShortcutZoomReset))
-                    shortcutRow(key: "Drag", desc: loc.s(.helpShortcutDrag))
+                    shortcutRow(key: loc.currentLanguage == .chinese ? "⇧ 点击" : "⇧ Click", desc: loc.s(.helpShortcutZoomIn))
+                    shortcutRow(key: loc.currentLanguage == .chinese ? "⇧⇧ 点击" : "⇧⇧ Click", desc: loc.s(.helpShortcutZoomReset))
+                    shortcutRow(key: loc.currentLanguage == .chinese ? "拖拽" : "Drag", desc: loc.s(.helpShortcutDrag))
                 }
 
                 // 使用技巧
