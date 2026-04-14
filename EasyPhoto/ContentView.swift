@@ -34,12 +34,12 @@ struct ContentView: View {
 
     // EXIF 浮动面板
     @State private var isExifForcedOn: Bool = false
-    @State private var isExifHoverOn: Bool = false
+    @State private var isExifEdgeHoverOn: Bool = false
+    @State private var isExifPanelHoverOn: Bool = false
     @State private var exifDragOffset: CGSize = .zero
     @State private var exifDragLastOffset: CGSize = .zero
-    @State private var hideTaskBox = HideTaskBox()
 
-    var isExifVisible: Bool { isExifForcedOn || isExifHoverOn }
+    var isExifVisible: Bool { isExifForcedOn || isExifEdgeHoverOn || isExifPanelHoverOn }
 
     var body: some View {
         GeometryReader { geo in
@@ -188,7 +188,6 @@ struct ContentView: View {
                 onExif: {
                     withAnimation(.easeInOut(duration: 0.2)) {
                         isExifForcedOn.toggle()
-                        if isExifForcedOn { hideTaskBox.cancel() }
                     }
                 },
                 onSlideshow: { toggleSlideshow() },
@@ -204,23 +203,21 @@ struct ContentView: View {
 
     private func handleEdgeHover(_ entering: Bool) {
         if entering {
-            hideTaskBox.cancel()
-            withAnimation(.easeInOut(duration: 0.2)) { isExifHoverOn = true }
+            withAnimation(.easeInOut(duration: 0.15)) { isExifEdgeHoverOn = true }
         } else {
-            scheduleHide()
+            // Leave edge: hide immediately unless panel itself is being hovered.
+            isExifEdgeHoverOn = false
         }
     }
 
     private func handlePanelHover(_ entering: Bool) {
-        if entering { hideTaskBox.cancel() } else { scheduleHide() }
-    }
-
-    private func scheduleHide() {
-        let task = DispatchWorkItem {
-            withAnimation(.easeInOut(duration: 0.2)) { isExifHoverOn = false }
+        if entering {
+            withAnimation(.easeInOut(duration: 0.15)) { isExifPanelHoverOn = true }
+        } else {
+            // Leave panel: force immediate hide to match mouse-out expectation.
+            isExifPanelHoverOn = false
+            isExifEdgeHoverOn = false
         }
-        hideTaskBox.set(task)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4, execute: task)
     }
 
     // MARK: - 拖拽

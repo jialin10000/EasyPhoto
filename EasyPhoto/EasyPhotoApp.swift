@@ -112,6 +112,27 @@ extension Notification.Name {
 // MARK: - AppDelegate（单窗口模式：双击新图片复用已有窗口）
 
 class AppDelegate: NSObject, NSApplicationDelegate {
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        applyDockIconIfAvailable()
+
+        // A delayed retry helps when LaunchServices initially serves a stale cached icon.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+            self.applyDockIconIfAvailable()
+        }
+    }
+
+    private func applyDockIconIfAvailable() {
+        if let iconURL = Bundle.main.url(forResource: "AppIcon", withExtension: "icns"),
+           let icon = NSImage(contentsOf: iconURL) {
+            NSApp.applicationIconImage = icon
+            return
+        }
+
+        if let icon = NSImage(named: "AppIcon") {
+            NSApp.applicationIconImage = icon
+        }
+    }
+
     func application(_ application: NSApplication, open urls: [URL]) {
         guard let url = urls.first else { return }
 
