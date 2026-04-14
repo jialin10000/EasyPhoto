@@ -12,6 +12,7 @@ import UniformTypeIdentifiers
 
 struct ContentView: View {
     @EnvironmentObject var loc: LocalizationManager
+    @AppStorage("slideshowIntervalSeconds") private var slideshowIntervalSeconds: Int = 3
     @State private var currentImage: NSImage?
     @State private var metadata: ImageMetadata?
     @State private var isDragging = false
@@ -22,6 +23,7 @@ struct ContentView: View {
     @State private var slideshowTimer: Timer?
     @State private var showSlideshowHint: Bool = false
     @State private var showImageCountHint: Bool = false
+    @State private var slideshowIntervalInput: String = "3"
     @State private var slideshowHintTaskBox = HideTaskBox()
     @State private var imageCountHintTaskBox = HideTaskBox()
 
@@ -36,6 +38,7 @@ struct ContentView: View {
     @State private var isExifForcedOn: Bool = false
     @State private var isExifEdgeHoverOn: Bool = false
     @State private var isExifPanelHoverOn: Bool = false
+    @State private var suppressEdgeHoverUntilExit: Bool = false
     @State private var exifDragOffset: CGSize = .zero
     @State private var exifDragLastOffset: CGSize = .zero
 
@@ -90,6 +93,35 @@ struct ContentView: View {
                     }
                 }
 
+                // ── 幻灯片间隔设置（1-9 秒）─────────────
+                VStack {
+                    HStack {
+                        HStack(spacing: 8) {
+                            Text(loc.s(.slideshowInterval))
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+
+                            TextField(loc.s(.slideshowIntervalHint), text: $slideshowIntervalInput)
+                                .textFieldStyle(.roundedBorder)
+                                .frame(width: 56)
+                                .multilineTextAlignment(.trailing)
+                                .onSubmit { applySlideshowIntervalInput() }
+
+                            Text(loc.s(.slideshowSeconds))
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(.ultraThinMaterial)
+                        .cornerRadius(8)
+                        .padding(12)
+
+                        Spacer()
+                    }
+                    Spacer()
+                }
+
                 // ── 拖拽高亮 ────────────────────────────
                 if isDragging {
                     RoundedRectangle(cornerRadius: 12)
@@ -136,7 +168,7 @@ struct ContentView: View {
                         .onHover { handlePanelHover($0) }
                         .transition(.asymmetric(
                             insertion: .opacity.combined(with: .move(edge: .trailing)),
-                            removal: .opacity
+                            removal: .identity
                         ))
                 }
 
@@ -163,7 +195,6 @@ struct ContentView: View {
                         .transition(.opacity)
                 }
             }
-            .animation(.easeInOut(duration: 0.2), value: isExifVisible)
             .animation(.easeInOut(duration: 0.2), value: showingPaywall)
         }
         .frame(minWidth: 800, minHeight: 500)
@@ -182,6 +213,9 @@ struct ContentView: View {
             }
         }
         .onAppear {
+            slideshowIntervalInput = String(validatedSlideshowInterval(from: slideshowIntervalSeconds))
+            slideshowIntervalSeconds = validatedSlideshowInterval(from: slideshowIntervalSeconds)
+
             keyMonitorBox.setup(
                 onLeft:      { navigateImage(direction: -1, userInitiated: true) },
                 onRight:     { navigateImage(direction:  1, userInitiated: true) },
@@ -197,24 +231,32 @@ struct ContentView: View {
         .onDisappear {
             keyMonitorBox.teardown()
         }
+        .onChange(of: slideshowIntervalInput) { newValue in
+            let filtered = newValue.filter { $0.isNumber }
+            if filtered != newValue {
+                slideshowIntervalInput = filtered
+            }
+        }
     }
 
     // MARK: - 悬停
 
     private func handleEdgeHover(_ entering: Bool) {
         if entering {
+            if suppressEdgeHoverUntilExit { return }
             withAnimation(.easeInOut(duration: 0.15)) { isExifEdgeHoverOn = true }
         } else {
-            // Leave edge: hide immediately unless panel itself is being hovered.
+            suppressEdgeHoverUntilExit = false
             isExifEdgeHoverOn = false
         }
     }
 
     private func handlePanelHover(_ entering: Bool) {
         if entering {
+            suppressEdgeHoverUntilExit = false
             withAnimation(.easeInOut(duration: 0.15)) { isExifPanelHoverOn = true }
         } else {
-            // Leave panel: force immediate hide to match mouse-out expectation.
+            suppressEdgeHoverUntilExit = true
             isExifPanelHoverOn = false
             isExifEdgeHoverOn = false
         }
@@ -341,7 +383,7 @@ struct ContentView: View {
         guard !folderImages.isEmpty else { return }
         hideAllHints()
         slideshowActive = true
-        slideshowTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { _ in
+        slideshowTimer = Timer.scheduledTimer(withTimeInterval: TimeInterval(slideshowIntervalSeconds), repeats: true) { _ in
             DispatchQueue.main.async {
                 let next = (currentIndex + 1) % folderImages.count
                 currentIndex = next
@@ -398,6 +440,29 @@ struct ContentView: View {
         withAnimation(.easeInOut(duration: 0.2)) {
             showSlideshowHint = false
             showImageCountHint = false
+        }
+    }
+
+    private func validatedSlideshowInterval(from value: Int) -> Int {
+        min(max(value, 1), 9)
+    }
+
+    private func applySlideshowIntervalInput() {
+        let parsed = Int(slideshowIntervalInput) ?? slideshowIntervalSeconds
+        let clamped = validatedSlideshowInterval(from: parsed)
+        slideshowIntervalSeconds = clamped
+        slideshowIntervalInput = String(clamped)
+
+        if slideshowActive {
+            // Restart timer so the new interval takes effect immediately.
+            slideshowTimer?.invalidate()
+            slideshowTimer = Timer.scheduledTimer(withTimeInterval: TimeInterval(clamped), repeats: true) { _ in
+                DispatchQueue.main.async {
+                    let next = (currentIndex + 1) % folderImages.count
+                    currentIndex = next
+                    loadImage(from: folderImages[next], showCountHint: false)
+                }
+            }
         }
     }
 }

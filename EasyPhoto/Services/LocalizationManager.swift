@@ -63,6 +63,9 @@ enum StringKey {
     case slideshowPlaying
     case slideshowStop
     case slideshowStartHint
+    case slideshowInterval
+    case slideshowSeconds
+    case slideshowIntervalHint
 
     // EXIF 面板
     case exifFile
@@ -141,6 +144,9 @@ enum StringKey {
         case .slideshowPlaying: return "▶ 幻灯片播放中"
         case .slideshowStop: return "按 S 停止"
         case .slideshowStartHint: return "按 S 开始幻灯片"
+        case .slideshowInterval: return "幻灯间隔"
+        case .slideshowSeconds: return "秒"
+        case .slideshowIntervalHint: return "输入 1-9"
         case .exifFile: return "文件"
         case .exifCamera: return "相机"
         case .exifLens: return "镜头"
@@ -170,7 +176,7 @@ enum StringKey {
         case .exifMeteringMode: return "测光模式"
         case .paywallTitle: return "幻灯片是 Pro 功能"
         case .paywallSubtitle: return "一次性解锁，永久享用幻灯片自动播放。浏览照片和查看 EXIF 始终免费。"
-        case .paywallFeature1: return "幻灯片自动播放（每 3 秒切换）"
+        case .paywallFeature1: return "幻灯片自动播放（间隔可调）"
         case .paywallFeature2: return "浏览和 EXIF 信息永久免费"
         case .paywallFeature3: return "一次付费，终身使用"
         case .paywallUnlock: return "解锁幻灯片"
@@ -192,7 +198,7 @@ enum StringKey {
         case .helpNavClickRight: return "点击图片右半区 → 下一张"
         case .helpNavArrowKeys: return "← → 方向键切换图片"
         case .helpShortcutsTitle: return "快捷键"
-        case .helpShortcutSlideshow: return "S — 开始/停止幻灯片播放（每 3 秒切换）"
+        case .helpShortcutSlideshow: return "S — 开始/停止幻灯片播放（间隔可调）"
         case .helpShortcutExif: return "I — 显示/隐藏 EXIF 信息面板"
         case .helpShortcutFullscreen: return "F — 进入/退出全屏"
         case .helpShortcutZoomIn: return "双击图片 — 放大到 2 倍"
@@ -212,6 +218,9 @@ enum StringKey {
         case .slideshowPlaying: return "▶ Slideshow playing"
         case .slideshowStop: return "Press S to stop"
         case .slideshowStartHint: return "Press S to start slideshow"
+        case .slideshowInterval: return "Interval"
+        case .slideshowSeconds: return "sec"
+        case .slideshowIntervalHint: return "Enter 1-9"
         case .exifFile: return "File"
         case .exifCamera: return "Camera"
         case .exifLens: return "Lens"
@@ -241,7 +250,7 @@ enum StringKey {
         case .exifMeteringMode: return "Metering"
         case .paywallTitle: return "Slideshow is a Pro Feature"
         case .paywallSubtitle: return "One-time unlock for slideshow. Browsing and EXIF are always free."
-        case .paywallFeature1: return "Slideshow auto-play (3s interval)"
+        case .paywallFeature1: return "Slideshow auto-play (adjustable interval)"
         case .paywallFeature2: return "Browsing & EXIF always free"
         case .paywallFeature3: return "One-time purchase, yours forever"
         case .paywallUnlock: return "Unlock Slideshow"
@@ -263,7 +272,7 @@ enum StringKey {
         case .helpNavClickRight: return "Click right side of image → Next"
         case .helpNavArrowKeys: return "← → arrow keys to switch images"
         case .helpShortcutsTitle: return "Keyboard Shortcuts"
-        case .helpShortcutSlideshow: return "S — Start/stop slideshow (3s interval)"
+        case .helpShortcutSlideshow: return "S — Start/stop slideshow (adjustable interval)"
         case .helpShortcutExif: return "I — Toggle EXIF info panel"
         case .helpShortcutFullscreen: return "F — Toggle fullscreen"
         case .helpShortcutZoomIn: return "Double-click — Zoom to 2x"
