@@ -107,8 +107,7 @@ struct ContentView: View {
                         onEntered: { handleEdgeHover(true) },
                         onExited: { handleEdgeHover(false) }
                     )
-                        .frame(width: 24)
-                        .padding(.trailing, 20)
+                        .frame(width: 36)
                         .contentShape(Rectangle())
                 }
 
