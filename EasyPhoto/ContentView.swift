@@ -334,21 +334,29 @@ class KeyboardView: NSView {
     var onToggleExif: (() -> Void)?
     var onToggleSlideshow: (() -> Void)?
 
-    override var acceptsFirstResponder: Bool { true }
-
-    override func keyDown(with event: NSEvent) {
-        switch event.keyCode {
-        case 123: onLeftArrow?()
-        case 124: onRightArrow?()
-        case 34:  onToggleExif?()
-        case 1:   onToggleSlideshow?()
-        default:  super.keyDown(with: event)
-        }
-    }
+    private var eventMonitor: Any?
 
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
-        window?.makeFirstResponder(self)
+        if window != nil {
+            // 全局监听，不依赖 first responder，拖入图片后也能正常响应
+            eventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+                guard let self else { return event }
+                switch event.keyCode {
+                case 123: self.onLeftArrow?();     return nil
+                case 124: self.onRightArrow?();    return nil
+                case 34:  self.onToggleExif?();    return nil
+                case 1:   self.onToggleSlideshow?(); return nil
+                default:  return event
+                }
+            }
+        } else {
+            if let m = eventMonitor { NSEvent.removeMonitor(m); eventMonitor = nil }
+        }
+    }
+
+    deinit {
+        if let m = eventMonitor { NSEvent.removeMonitor(m) }
     }
 }
 
