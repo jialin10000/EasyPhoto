@@ -239,12 +239,12 @@ class ExifParser {
 
     private static func decodeExposureProgram(_ value: Int) -> String {
         switch value {
-        case 1: return "M"
-        case 2: return "P"
-        case 3: return "A"
-        case 4: return "S"
-        case 5: return "Creative"
-        case 6: return "Action"
+        case 1: return "Manual (M)"
+        case 2: return "Program (P)"
+        case 3: return "Aperture Priority (A)"
+        case 4: return "Shutter Priority (S)"
+        case 5: return "Creative (Depth)"
+        case 6: return "Action (Speed)"
         case 7: return "Portrait"
         case 8: return "Landscape"
         default: return "Auto"

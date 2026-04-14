@@ -25,6 +25,9 @@ struct ContentView: View {
     @ObservedObject private var pm = PurchaseManager.shared
     @State private var showingPaywall: Bool = false
 
+    // 键盘监听
+    @State private var keyMonitorBox = KeyMonitorBox()
+
     // EXIF 浮动面板
     @State private var isExifForcedOn: Bool = false
     @State private var isExifHoverOn: Bool = false
@@ -157,17 +160,23 @@ struct ContentView: View {
                 openFolder(folderURL)
             }
         }
-        .background(KeyboardEventHandler(
-            onLeftArrow: { navigateImage(direction: -1) },
-            onRightArrow: { navigateImage(direction: 1) },
-            onToggleExif: {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    isExifForcedOn.toggle()
-                    if isExifForcedOn { hideTaskBox.cancel() }
-                }
-            },
-            onToggleSlideshow: { toggleSlideshow() }
-        ))
+        .onAppear {
+            // 直接用 NSEvent 全局监听，不依赖 first responder，也不通过 NSViewRepresentable
+            keyMonitorBox.setup(
+                onLeft:      { navigateImage(direction: -1) },
+                onRight:     { navigateImage(direction:  1) },
+                onExif: {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        isExifForcedOn.toggle()
+                        if isExifForcedOn { hideTaskBox.cancel() }
+                    }
+                },
+                onSlideshow: { toggleSlideshow() }
+            )
+        }
+        .onDisappear {
+            keyMonitorBox.teardown()
+        }
     }
 
     // MARK: - 悬停
@@ -307,57 +316,34 @@ class HideTaskBox {
     func cancel() { task?.cancel(); task = nil }
 }
 
-// MARK: - 键盘事件
+// MARK: - 键盘监听（全局，不依赖 first responder）
 
-struct KeyboardEventHandler: NSViewRepresentable {
-    var onLeftArrow: () -> Void
-    var onRightArrow: () -> Void
-    var onToggleExif: () -> Void
-    var onToggleSlideshow: () -> Void
+class KeyMonitorBox {
+    private var monitor: Any?
 
-    func makeNSView(context: Context) -> KeyboardView {
-        let view = KeyboardView()
-        view.onLeftArrow = onLeftArrow; view.onRightArrow = onRightArrow
-        view.onToggleExif = onToggleExif; view.onToggleSlideshow = onToggleSlideshow
-        return view
-    }
-
-    func updateNSView(_ nsView: KeyboardView, context: Context) {
-        nsView.onLeftArrow = onLeftArrow; nsView.onRightArrow = onRightArrow
-        nsView.onToggleExif = onToggleExif; nsView.onToggleSlideshow = onToggleSlideshow
-    }
-}
-
-class KeyboardView: NSView {
-    var onLeftArrow: (() -> Void)?
-    var onRightArrow: (() -> Void)?
-    var onToggleExif: (() -> Void)?
-    var onToggleSlideshow: (() -> Void)?
-
-    private var eventMonitor: Any?
-
-    override func viewDidMoveToWindow() {
-        super.viewDidMoveToWindow()
-        if window != nil {
-            // 全局监听，不依赖 first responder，拖入图片后也能正常响应
-            eventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-                guard let self else { return event }
-                switch event.keyCode {
-                case 123: self.onLeftArrow?();     return nil
-                case 124: self.onRightArrow?();    return nil
-                case 34:  self.onToggleExif?();    return nil
-                case 1:   self.onToggleSlideshow?(); return nil
-                default:  return event
-                }
+    func setup(
+        onLeft:      @escaping () -> Void,
+        onRight:     @escaping () -> Void,
+        onExif:      @escaping () -> Void,
+        onSlideshow: @escaping () -> Void
+    ) {
+        guard monitor == nil else { return }
+        monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            switch event.keyCode {
+            case 123: onLeft();      return nil
+            case 124: onRight();     return nil
+            case 34:  onExif();      return nil
+            case 1:   onSlideshow(); return nil
+            default:  return event
             }
-        } else {
-            if let m = eventMonitor { NSEvent.removeMonitor(m); eventMonitor = nil }
         }
     }
 
-    deinit {
-        if let m = eventMonitor { NSEvent.removeMonitor(m) }
+    func teardown() {
+        if let m = monitor { NSEvent.removeMonitor(m); monitor = nil }
     }
+
+    deinit { teardown() }
 }
 
 #Preview { ContentView() }
