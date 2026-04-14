@@ -11,6 +11,7 @@ import UniformTypeIdentifiers
 @main
 struct EasyPhotoApp: App {
     @ObservedObject var loc = LocalizationManager.shared
+    @AppStorage("slideshowIntervalSeconds") private var slideshowIntervalSeconds: Int = 3
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
     var body: some Scene {
@@ -58,6 +59,12 @@ struct EasyPhotoApp: App {
                 }
             }
 
+            CommandMenu(loc.s(.menuSlideshow)) {
+                Button(loc.s(.menuSlideshowInterval)) {
+                    openSlideshowIntervalPanel()
+                }
+            }
+
             // Help 菜单
             CommandGroup(replacing: .help) {
                 Button(loc.s(.menuHelp)) {
@@ -99,6 +106,26 @@ struct EasyPhotoApp: App {
 
     private func imageContentTypes() -> [UTType] {
         [.jpeg, .png, .heic, .heif, .tiff, .gif, .bmp, .rawImage]
+    }
+
+    private func openSlideshowIntervalPanel() {
+        let alert = NSAlert()
+        alert.messageText = loc.s(.menuSlideshowInterval)
+        alert.informativeText = "\(loc.s(.slideshowInterval)): 1-9 \(loc.s(.slideshowSeconds))"
+        alert.alertStyle = .informational
+        alert.addButton(withTitle: "OK")
+        alert.addButton(withTitle: "Cancel")
+
+        let textField = NSTextField(frame: NSRect(x: 0, y: 0, width: 120, height: 24))
+        textField.stringValue = String(min(max(slideshowIntervalSeconds, 1), 9))
+        textField.alignment = .right
+        alert.accessoryView = textField
+
+        let response = alert.runModal()
+        guard response == .alertFirstButtonReturn else { return }
+
+        let parsed = Int(textField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)) ?? slideshowIntervalSeconds
+        slideshowIntervalSeconds = min(max(parsed, 1), 9)
     }
 }
 

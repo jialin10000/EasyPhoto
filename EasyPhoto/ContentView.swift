@@ -23,7 +23,6 @@ struct ContentView: View {
     @State private var slideshowTimer: Timer?
     @State private var showSlideshowHint: Bool = false
     @State private var showImageCountHint: Bool = false
-    @State private var slideshowIntervalInput: String = "3"
     @State private var slideshowHintTaskBox = HideTaskBox()
     @State private var imageCountHintTaskBox = HideTaskBox()
 
@@ -93,35 +92,6 @@ struct ContentView: View {
                     }
                 }
 
-                // ── 幻灯片间隔设置（1-9 秒）─────────────
-                VStack {
-                    HStack {
-                        HStack(spacing: 8) {
-                            Text(loc.s(.slideshowInterval))
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-
-                            TextField(loc.s(.slideshowIntervalHint), text: $slideshowIntervalInput)
-                                .textFieldStyle(.roundedBorder)
-                                .frame(width: 56)
-                                .multilineTextAlignment(.trailing)
-                                .onSubmit { applySlideshowIntervalInput() }
-
-                            Text(loc.s(.slideshowSeconds))
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(.ultraThinMaterial)
-                        .cornerRadius(8)
-                        .padding(12)
-
-                        Spacer()
-                    }
-                    Spacer()
-                }
-
                 // ── 拖拽高亮 ────────────────────────────
                 if isDragging {
                     RoundedRectangle(cornerRadius: 12)
@@ -131,12 +101,14 @@ struct ContentView: View {
                 }
 
                 // ── 右侧边缘触发区（不可见，20px 宽） ──
-                HStack(spacing: 0) {
-                    Spacer()
-                    Color.clear
-                        .frame(width: 20)
-                        .contentShape(Rectangle())
-                        .onHover { handleEdgeHover($0) }
+                if !isExifVisible {
+                    HStack(spacing: 0) {
+                        Spacer()
+                        Color.clear
+                            .frame(width: 20)
+                            .contentShape(Rectangle())
+                            .onHover { handleEdgeHover($0) }
+                    }
                 }
 
                 // ── 浮动 EXIF 面板 ─────────────────────
@@ -213,7 +185,6 @@ struct ContentView: View {
             }
         }
         .onAppear {
-            slideshowIntervalInput = String(validatedSlideshowInterval(from: slideshowIntervalSeconds))
             slideshowIntervalSeconds = validatedSlideshowInterval(from: slideshowIntervalSeconds)
 
             keyMonitorBox.setup(
@@ -230,12 +201,6 @@ struct ContentView: View {
         }
         .onDisappear {
             keyMonitorBox.teardown()
-        }
-        .onChange(of: slideshowIntervalInput) { newValue in
-            let filtered = newValue.filter { $0.isNumber }
-            if filtered != newValue {
-                slideshowIntervalInput = filtered
-            }
         }
     }
 
@@ -445,25 +410,6 @@ struct ContentView: View {
 
     private func validatedSlideshowInterval(from value: Int) -> Int {
         min(max(value, 1), 9)
-    }
-
-    private func applySlideshowIntervalInput() {
-        let parsed = Int(slideshowIntervalInput) ?? slideshowIntervalSeconds
-        let clamped = validatedSlideshowInterval(from: parsed)
-        slideshowIntervalSeconds = clamped
-        slideshowIntervalInput = String(clamped)
-
-        if slideshowActive {
-            // Restart timer so the new interval takes effect immediately.
-            slideshowTimer?.invalidate()
-            slideshowTimer = Timer.scheduledTimer(withTimeInterval: TimeInterval(clamped), repeats: true) { _ in
-                DispatchQueue.main.async {
-                    let next = (currentIndex + 1) % folderImages.count
-                    currentIndex = next
-                    loadImage(from: folderImages[next], showCountHint: false)
-                }
-            }
-        }
     }
 }
 
