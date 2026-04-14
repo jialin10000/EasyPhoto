@@ -63,35 +63,44 @@ struct ImageViewer: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
 
                 // 点击左/右半区切换图片（仅在未放大时）
+                // 注意：macOS 上 Color.clear 不接受点击，用极低不透明度的 Color
                 if scale <= 1.0 {
                     HStack(spacing: 0) {
-                        // 左半区 → 上一张
-                        Color.clear
+                        // 左半区 → 上一张（单击导航，双击放大）
+                        Color.white.opacity(0.001)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .contentShape(Rectangle())
-                            .onTapGesture(count: 2) {
-                                withAnimation(.spring(response: 0.3)) {
-                                    scale = 2.0
+                            .gesture(
+                                TapGesture(count: 2).onEnded {
+                                    withAnimation(.spring(response: 0.3)) { scale = 2.0 }
                                 }
-                            }
-                            .onTapGesture(count: 1) {
-                                onNavigate?(-1)
-                            }
+                                .exclusively(before:
+                                    TapGesture(count: 1).onEnded {
+                                        onNavigate?(-1)
+                                    }
+                                )
+                            )
 
-                        // 右半区 → 下一张
-                        Color.clear
+                        // 右半区 → 下一张（单击导航，双击放大）
+                        Color.white.opacity(0.001)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .contentShape(Rectangle())
-                            .onTapGesture(count: 2) {
-                                withAnimation(.spring(response: 0.3)) {
-                                    scale = 2.0
+                            .gesture(
+                                TapGesture(count: 2).onEnded {
+                                    withAnimation(.spring(response: 0.3)) { scale = 2.0 }
                                 }
-                            }
-                            .onTapGesture(count: 1) {
-                                onNavigate?(1)
-                            }
+                                .exclusively(before:
+                                    TapGesture(count: 1).onEnded {
+                                        onNavigate?(1)
+                                    }
+                                )
+                            )
                     }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     // 放大时，双击恢复原始大小
-                    Color.clear
+                    Color.white.opacity(0.001)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .contentShape(Rectangle())
                         .onTapGesture(count: 2) {
                             withAnimation(.spring(response: 0.3)) {

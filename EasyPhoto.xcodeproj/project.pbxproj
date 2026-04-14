@@ -6,7 +6,30 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		B00000000000000000000001 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000001 /* ContentView.swift */; };
+		B00000000000000000000002 /* EasyPhotoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000002 /* EasyPhotoApp.swift */; };
+		B00000000000000000000003 /* ImageMetadata.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000003 /* ImageMetadata.swift */; };
+		B00000000000000000000004 /* ExifParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000004 /* ExifParser.swift */; };
+		B00000000000000000000005 /* LocalizationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000005 /* LocalizationManager.swift */; };
+		B00000000000000000000006 /* PurchaseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000006 /* PurchaseManager.swift */; };
+		B00000000000000000000007 /* ExifPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000007 /* ExifPanel.swift */; };
+		B00000000000000000000008 /* HelpView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000008 /* HelpView.swift */; };
+		B00000000000000000000009 /* ImageViewer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000009 /* ImageViewer.swift */; };
+		B0000000000000000000000A /* PaywallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0000000000000000000000A /* PaywallView.swift */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
+		F00000000000000000000001 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EasyPhoto/ContentView.swift; sourceTree = "<group>"; };
+		F00000000000000000000002 /* EasyPhotoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EasyPhoto/EasyPhotoApp.swift; sourceTree = "<group>"; };
+		F00000000000000000000003 /* ImageMetadata.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EasyPhoto/Models/ImageMetadata.swift; sourceTree = "<group>"; };
+		F00000000000000000000004 /* ExifParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EasyPhoto/Services/ExifParser.swift; sourceTree = "<group>"; };
+		F00000000000000000000005 /* LocalizationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EasyPhoto/Services/LocalizationManager.swift; sourceTree = "<group>"; };
+		F00000000000000000000006 /* PurchaseManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EasyPhoto/Services/PurchaseManager.swift; sourceTree = "<group>"; };
+		F00000000000000000000007 /* ExifPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EasyPhoto/Views/ExifPanel.swift; sourceTree = "<group>"; };
+		F00000000000000000000008 /* HelpView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EasyPhoto/Views/HelpView.swift; sourceTree = "<group>"; };
+		F00000000000000000000009 /* ImageViewer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EasyPhoto/Views/ImageViewer.swift; sourceTree = "<group>"; };
+		F0000000000000000000000A /* PaywallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EasyPhoto/Views/PaywallView.swift; sourceTree = "<group>"; };
 		3AFE98682F189152002CEF14 /* EasyPhoto.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = EasyPhoto.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -59,9 +82,6 @@
 			buildRules = (
 			);
 			dependencies = (
-			);
-			fileSystemSynchronizedGroups = (
-				3AFE986A2F189152002CEF14 /* EasyPhoto */,
 			);
 			name = EasyPhoto;
 			packageProductDependencies = (
@@ -119,6 +139,16 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B00000000000000000000001 /* ContentView.swift in Sources */,
+				B00000000000000000000002 /* EasyPhotoApp.swift in Sources */,
+				B00000000000000000000003 /* ImageMetadata.swift in Sources */,
+				B00000000000000000000004 /* ExifParser.swift in Sources */,
+				B00000000000000000000005 /* LocalizationManager.swift in Sources */,
+				B00000000000000000000006 /* PurchaseManager.swift in Sources */,
+				B00000000000000000000007 /* ExifPanel.swift in Sources */,
+				B00000000000000000000008 /* HelpView.swift in Sources */,
+				B00000000000000000000009 /* ImageViewer.swift in Sources */,
+				B0000000000000000000000A /* PaywallView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

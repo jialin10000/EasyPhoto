@@ -136,6 +136,23 @@ struct ContentView: View {
                         ))
                 }
 
+                // ── 调试信息（提交前删除）────────────────
+                if !folderImages.isEmpty {
+                    VStack {
+                        Spacer()
+                        HStack {
+                            Spacer()
+                            Text("[\(currentIndex + 1)/\(folderImages.count)] \(currentImageURL?.lastPathComponent ?? "")")
+                                .font(.caption2)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(.ultraThinMaterial)
+                                .cornerRadius(6)
+                                .padding(8)
+                        }
+                    }
+                }
+
                 // ── 付费墙 ─────────────────────────────
                 if showingPaywall {
                     PaywallView(onDismiss: { showingPaywall = false })
@@ -170,7 +187,8 @@ struct ContentView: View {
                         if isExifForcedOn { hideTaskBox.cancel() }
                     }
                 },
-                onSlideshow: { toggleSlideshow() }
+                onSlideshow: { toggleSlideshow() },
+                onFullscreen: { toggleFullscreen() }
             )
         }
         .onDisappear {
@@ -219,6 +237,11 @@ struct ContentView: View {
     // MARK: - 图片加载（无任何限制）
 
     private func loadImage(from url: URL) {
+        let scoped = url.startAccessingSecurityScopedResource()
+        defer {
+            if scoped { url.stopAccessingSecurityScopedResource() }
+        }
+
         guard let image = NSImage(contentsOf: url) else { return }
         currentImage = image
         currentImageURL = url
@@ -238,13 +261,7 @@ struct ContentView: View {
 
     private func loadFolderImages(from url: URL) {
         let folderURL = url.deletingLastPathComponent()
-        guard let contents = try? FileManager.default.contentsOfDirectory(
-            at: folderURL, includingPropertiesForKeys: [.contentTypeKey], options: [.skipsHiddenFiles]
-        ) else { return }
-
-        folderImages = contents
-            .filter { Self.imageExtensions.contains($0.pathExtension.lowercased()) }
-            .sorted { $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending }
+        folderImages = readImages(in: folderURL)
 
         if let index = folderImages.firstIndex(of: url) {
             currentIndex = index
@@ -254,13 +271,7 @@ struct ContentView: View {
     }
 
     private func openFolder(_ folderURL: URL) {
-        guard let contents = try? FileManager.default.contentsOfDirectory(
-            at: folderURL, includingPropertiesForKeys: [.contentTypeKey], options: [.skipsHiddenFiles]
-        ) else { return }
-
-        folderImages = contents
-            .filter { Self.imageExtensions.contains($0.pathExtension.lowercased()) }
-            .sorted { $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending }
+        folderImages = readImages(in: folderURL)
 
         if let first = folderImages.first {
             currentIndex = 0
@@ -268,14 +279,42 @@ struct ContentView: View {
         }
     }
 
+    private func readImages(in folderURL: URL) -> [URL] {
+        let scoped = folderURL.startAccessingSecurityScopedResource()
+        defer {
+            if scoped { folderURL.stopAccessingSecurityScopedResource() }
+        }
+
+        let fm = FileManager.default
+        let options: FileManager.DirectoryEnumerationOptions = [.skipsHiddenFiles]
+        let primary = try? fm.contentsOfDirectory(at: folderURL, includingPropertiesForKeys: [.isRegularFileKey], options: options)
+        let fallback = try? fm.contentsOfDirectory(at: folderURL, includingPropertiesForKeys: nil, options: options)
+        let contents = primary ?? fallback ?? []
+
+        return contents
+            .filter { Self.imageExtensions.contains($0.pathExtension.lowercased()) }
+            .sorted { $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending }
+    }
+
     // MARK: - 图片导航
 
     private func navigateImage(direction: Int) {
         guard !folderImages.isEmpty else { return }
-        let newIndex = currentIndex + direction
+
+        // 用当前显示的 URL 实时查位置，不依赖可能过时的 currentIndex
+        let baseIndex: Int
+        if let url = currentImageURL,
+           let idx = folderImages.firstIndex(of: url)
+            ?? folderImages.firstIndex(where: { $0.path == url.path }) {
+            baseIndex = idx
+        } else {
+            baseIndex = currentIndex
+        }
+
+        let newIndex = baseIndex + direction
         guard newIndex >= 0 && newIndex < folderImages.count else { return }
         currentIndex = newIndex
-        loadImage(from: folderImages[currentIndex])
+        loadImage(from: folderImages[newIndex])
     }
 
     // MARK: - 幻灯片（Pro 功能，未付费弹付费墙）
@@ -309,6 +348,12 @@ struct ContentView: View {
         slideshowTimer?.invalidate()
         slideshowTimer = nil
     }
+
+    private func toggleFullscreen() {
+        if let window = NSApp.keyWindow ?? NSApp.mainWindow ?? NSApp.windows.first {
+            window.toggleFullScreen(nil)
+        }
+    }
 }
 
 // MARK: - HideTaskBox
@@ -328,7 +373,8 @@ class KeyMonitorBox {
         onLeft:      @escaping () -> Void,
         onRight:     @escaping () -> Void,
         onExif:      @escaping () -> Void,
-        onSlideshow: @escaping () -> Void
+        onSlideshow: @escaping () -> Void,
+        onFullscreen:@escaping () -> Void
     ) {
         guard monitor == nil else { return }
         monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
@@ -337,6 +383,7 @@ class KeyMonitorBox {
             case 124: onRight();     return nil
             case 34:  onExif();      return nil
             case 1:   onSlideshow(); return nil
+            case 3:   onFullscreen(); return nil
             default:  return event
             }
         }
