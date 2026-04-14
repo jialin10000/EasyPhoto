@@ -18,6 +18,7 @@
 		B00000000000000000000009 /* ImageViewer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000009 /* ImageViewer.swift */; };
 		B0000000000000000000000A /* PaywallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0000000000000000000000A /* PaywallView.swift */; };
 		B0000000000000000000000B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F0000000000000000000000B /* Assets.xcassets */; };
+		B0000000000000000000000C /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = V0000000000000000000000C /* InfoPlist.strings */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -33,6 +34,8 @@
 		F0000000000000000000000A /* PaywallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EasyPhoto/Views/PaywallView.swift; sourceTree = "<group>"; };
 		F0000000000000000000000B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = EasyPhoto/Assets.xcassets; sourceTree = "<group>"; };
 		3AFE98682F189152002CEF14 /* EasyPhoto.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = EasyPhoto.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		F0000000000000000000000C /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = EasyPhoto/en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		F0000000000000000000000D /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "EasyPhoto/zh-Hans.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -42,6 +45,18 @@
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXVariantGroup section */
+		V0000000000000000000000C /* InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				F0000000000000000000000C /* en */,
+				F0000000000000000000000D /* zh-Hans */,
+			);
+			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		3AFE98652F189152002CEF14 /* Frameworks */ = {
@@ -58,6 +73,7 @@
 			isa = PBXGroup;
 			children = (
 				3AFE986A2F189152002CEF14 /* EasyPhoto */,
+				V0000000000000000000000C /* InfoPlist.strings */,
 				3AFE98692F189152002CEF14 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -112,6 +128,7 @@
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
+				"zh-Hans",
 				Base,
 			);
 			mainGroup = 3AFE985F2F189152002CEF14;
@@ -132,6 +149,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				B0000000000000000000000B /* Assets.xcassets in Resources */,
+				B0000000000000000000000C /* InfoPlist.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

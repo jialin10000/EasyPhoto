@@ -1,0 +1,4 @@
+/* English localization */
+CFBundleDisplayName = "EasyPhoto";
+CFBundleName = "EasyPhoto";
+NSHumanReadableCopyright = "";

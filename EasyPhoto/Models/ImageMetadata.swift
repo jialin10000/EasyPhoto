@@ -76,7 +76,7 @@ struct ImageMetadata {
         
         // 添加等效焦距
         if let focal35 = focalLength35mm, focal35 != focal {
-            result += String(format: " (等效 %.0fmm)", focal35)
+            result += String(format: " (≈%.0fmm FF)", focal35)
         }
         
         return result

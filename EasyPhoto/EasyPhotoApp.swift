@@ -48,7 +48,7 @@ struct EasyPhotoApp: App {
                     Button {
                         guard loc.currentLanguage != lang else { return }
                         loc.setLanguageByUser(lang)
-                        relaunchApp()
+                        showLanguageChangeAlert(lang)
                     } label: {
                         HStack {
                             Text(lang.displayName(in: loc.currentLanguage))
@@ -130,12 +130,22 @@ struct EasyPhotoApp: App {
         slideshowIntervalSeconds = min(max(parsed, 1), 9)
     }
 
-    private func relaunchApp() {
-        let appURL = Bundle.main.bundleURL
-        let configuration = NSWorkspace.OpenConfiguration()
-        NSWorkspace.shared.openApplication(at: appURL, configuration: configuration) { _, _ in
-            NSApp.terminate(nil)
-        }
+    private func showLanguageChangeAlert(_ lang: LocalizationManager.Language) {
+        let alert = NSAlert()
+        // 用目标语言显示提示，让用户能看懂
+        let message = lang == .chinese
+            ? "语言已切换为中文"
+            : "Language changed to English"
+        let info = lang == .chinese
+            ? "重新启动 EasyPhoto 后生效。"
+            : "Restart EasyPhoto to apply the change."
+        let ok = lang == .chinese ? "好" : "OK"
+
+        alert.messageText = message
+        alert.informativeText = info
+        alert.alertStyle = .informational
+        alert.addButton(withTitle: ok)
+        alert.runModal()
     }
 }
 
