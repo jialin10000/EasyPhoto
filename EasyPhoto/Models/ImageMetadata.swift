@@ -23,16 +23,19 @@ struct ImageMetadata {
     var shutterSpeed: Double?        // 快门速度 (秒)
     var iso: Int?                    // ISO 感光度
     var exposureBias: Double?        // 曝光补偿
-    
+    var exposureProgram: String?     // 曝光程序 (P/A/S/M...)，标准 EXIF
+    var meteringMode: String?        // 测光模式，标准 EXIF
+    var focusMode: String?           // 对焦模式 (AF-S/AF-C/MF...)，MakerNote，不保证所有品牌
+
     // 时间信息
     var dateTimeOriginal: Date?      // 拍摄时间
     var dateTimeDigitized: Date?     // 数字化时间
-    
+
     // GPS 信息
     var latitude: Double?            // 纬度
     var longitude: Double?           // 经度
     var altitude: Double?            // 海拔
-    
+
     // 图片信息
     var imageWidth: Int?             // 图片宽度
     var imageHeight: Int?            // 图片高度

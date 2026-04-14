@@ -55,10 +55,10 @@ class ExifParser {
         if let exifAux = properties[kCGImagePropertyExifAuxDictionary as String] as? [String: Any] {
             parseExifAux(exifAux: exifAux, metadata: &metadata)
         }
-        
-        // 解析 MakerNote 中的镜头信息 (部分相机)
-        // 注意：MakerNote 格式因厂商而异，这里只做基本支持
-        
+
+        // 解析 MakerNote 中的对焦模式（各厂商私有，尽力而为）
+        parseMakerNote(properties: properties, metadata: &metadata)
+
         return metadata
     }
     
@@ -115,6 +115,16 @@ class ExifParser {
         if let lensMake = exif[kCGImagePropertyExifLensMake as String] as? String {
             metadata.lensMake = lensMake
         }
+
+        // 曝光程序 (P/A/S/M 等，标准 EXIF 字段，兼容性好)
+        if let program = exif[kCGImagePropertyExifExposureProgram as String] as? Int {
+            metadata.exposureProgram = decodeExposureProgram(program)
+        }
+
+        // 测光模式
+        if let metering = exif[kCGImagePropertyExifMeteringMode as String] as? Int {
+            metadata.meteringMode = decodeMeteringMode(metering)
+        }
     }
     
     private static func parseTiff(tiff: [String: Any], metadata: inout ImageMetadata) {
@@ -158,8 +168,103 @@ class ExifParser {
         }
     }
     
+    // MARK: - MakerNote（厂商私有数据，用于对焦模式等）
+
+    private static func parseMakerNote(properties: [String: Any], metadata: inout ImageMetadata) {
+        // Sony / Minolta（Sony 沿用 Minolta MakerNote 格式）
+        if let makerMinolta = properties[kCGImagePropertyMakerMinoltaDictionary as String] as? [String: Any] {
+            if let focusRaw = makerMinolta["FocusMode"] as? Int {
+                metadata.focusMode = decodeSonyFocusMode(focusRaw)
+            }
+        }
+
+        // Canon
+        if metadata.focusMode == nil,
+           let makerCanon = properties[kCGImagePropertyMakerCanonDictionary as String] as? [String: Any] {
+            // CanonCameraSettings 数组，index 7 = FocusMode（部分型号）
+            if let settings = makerCanon["CanonCameraSettings"] as? [Any],
+               settings.count > 7,
+               let focusRaw = settings[7] as? Int {
+                metadata.focusMode = decodeCanonFocusMode(focusRaw)
+            }
+        }
+
+        // Nikon / Fuji / 其他：若 ImageIO 暴露了 FocusMode 键，直接读取
+        if metadata.focusMode == nil {
+            let makerKeys = [
+                kCGImagePropertyMakerNikonDictionary as String,
+                kCGImagePropertyMakerFujiDictionary as String,
+            ]
+            for key in makerKeys {
+                if let dict = properties[key] as? [String: Any] {
+                    if let focusStr = dict["FocusMode"] as? String, !focusStr.isEmpty {
+                        metadata.focusMode = focusStr
+                        break
+                    } else if let focusRaw = dict["FocusMode"] as? Int {
+                        metadata.focusMode = "Mode \(focusRaw)"
+                        break
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - 解码辅助
+
+    private static func decodeSonyFocusMode(_ value: Int) -> String {
+        switch value {
+        case 0: return "AF-S"
+        case 1: return "AF-C"
+        case 2: return "AF-A"
+        case 3: return "MF"
+        case 4: return "Permanent AF"
+        case 6: return "DMF"
+        case 7: return "AF-D"
+        default: return "Unknown (\(value))"
+        }
+    }
+
+    private static func decodeCanonFocusMode(_ value: Int) -> String {
+        switch value {
+        case 0: return "One-Shot AF"
+        case 1: return "AI Servo AF"
+        case 2: return "AI Focus AF"
+        case 3: return "MF"
+        case 4: return "Single"
+        case 5: return "Continuous"
+        case 6: return "MF"
+        default: return "Unknown (\(value))"
+        }
+    }
+
+    private static func decodeExposureProgram(_ value: Int) -> String {
+        switch value {
+        case 1: return "M"
+        case 2: return "P"
+        case 3: return "A"
+        case 4: return "S"
+        case 5: return "Creative"
+        case 6: return "Action"
+        case 7: return "Portrait"
+        case 8: return "Landscape"
+        default: return "Auto"
+        }
+    }
+
+    private static func decodeMeteringMode(_ value: Int) -> String {
+        switch value {
+        case 1: return "Average"
+        case 2: return "Center-weighted"
+        case 3: return "Spot"
+        case 4: return "Multi-spot"
+        case 5: return "Multi-segment"
+        case 6: return "Partial"
+        default: return "Unknown"
+        }
+    }
+
     // MARK: - Helper Methods
-    
+
     private static func parseExifDate(_ dateString: String) -> Date? {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy:MM:dd HH:mm:ss"

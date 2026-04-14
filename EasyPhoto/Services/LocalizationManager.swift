@@ -88,6 +88,9 @@ enum StringKey {
     case exifCoordinates
     case exifAltitude
     case exifNoInfo
+    case exifFocusMode
+    case exifExposureProgram
+    case exifMeteringMode
 
     // 菜单
     case menuLanguage
@@ -147,6 +150,9 @@ enum StringKey {
         case .exifCoordinates: return "坐标"
         case .exifAltitude: return "海拔"
         case .exifNoInfo: return "拖入图片以查看 EXIF 信息"
+        case .exifFocusMode: return "对焦模式"
+        case .exifExposureProgram: return "曝光程序"
+        case .exifMeteringMode: return "测光模式"
         case .menuLanguage: return "语言"
         case .menuHelp: return "使用帮助"
         case .menuAbout: return "关于 EasyPhoto"
@@ -204,6 +210,9 @@ enum StringKey {
         case .exifCoordinates: return "Coordinates"
         case .exifAltitude: return "Altitude"
         case .exifNoInfo: return "Drop an image to view EXIF info"
+        case .exifFocusMode: return "Focus Mode"
+        case .exifExposureProgram: return "Exp. Program"
+        case .exifMeteringMode: return "Metering"
         case .menuLanguage: return "Language"
         case .menuHelp: return "Help Guide"
         case .menuAbout: return "About EasyPhoto"
