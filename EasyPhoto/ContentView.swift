@@ -19,6 +19,10 @@ struct ContentView: View {
     @State private var slideshowActive: Bool = false
     @State private var slideshowTimer: Timer?
 
+    // 付费墙
+    @ObservedObject private var pm = PurchaseManager.shared
+    @State private var showingPaywall: Bool = false
+
     // EXIF 浮动面板状态
     @State private var isExifForcedOn: Bool = false    // I 键强制显示/隐藏
     @State private var isExifHoverOn: Bool = false     // 鼠标悬停触发
@@ -137,6 +141,12 @@ struct ContentView: View {
                             )
                         )
                 }
+
+                // ── 付费墙 ─────────────────────────────
+                if showingPaywall {
+                    PaywallView(onDismiss: { showingPaywall = false })
+                        .transition(.opacity)
+                }
             }
             .animation(.easeInOut(duration: 0.2), value: isExifVisible)
         }
@@ -226,6 +236,14 @@ struct ContentView: View {
     // MARK: - 图片加载
 
     private func loadImage(from url: URL) {
+        // 检查免费额度
+        guard pm.recordView() else {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                showingPaywall = true
+            }
+            return
+        }
+
         guard let image = NSImage(contentsOf: url) else {
             print("无法加载图片: \(url.path)")
             return

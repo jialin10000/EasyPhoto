@@ -92,6 +92,16 @@ enum StringKey {
     case exifExposureProgram
     case exifMeteringMode
 
+    // 付费墙
+    case paywallTitle
+    case paywallSubtitle
+    case paywallFeature1
+    case paywallFeature2
+    case paywallFeature3
+    case paywallUnlock
+    case paywallRestore
+    case paywallLater
+
     // 菜单
     case menuLanguage
     case menuHelp
@@ -153,6 +163,14 @@ enum StringKey {
         case .exifFocusMode: return "对焦模式"
         case .exifExposureProgram: return "曝光程序"
         case .exifMeteringMode: return "测光模式"
+        case .paywallTitle: return "您已浏览 50 张免费照片"
+        case .paywallSubtitle: return "解锁 EasyPhoto，享受无限量浏览、完整 EXIF 信息和幻灯片播放。"
+        case .paywallFeature1: return "无限浏览文件夹中的所有照片"
+        case .paywallFeature2: return "查看完整 EXIF 元数据"
+        case .paywallFeature3: return "幻灯片自动播放"
+        case .paywallUnlock: return "一次性解锁"
+        case .paywallRestore: return "恢复购买"
+        case .paywallLater: return "稍后再说"
         case .menuLanguage: return "语言"
         case .menuHelp: return "使用帮助"
         case .menuAbout: return "关于 EasyPhoto"
@@ -213,6 +231,14 @@ enum StringKey {
         case .exifFocusMode: return "Focus Mode"
         case .exifExposureProgram: return "Exp. Program"
         case .exifMeteringMode: return "Metering"
+        case .paywallTitle: return "You've viewed 50 free photos"
+        case .paywallSubtitle: return "Unlock EasyPhoto for unlimited browsing, full EXIF info and slideshow."
+        case .paywallFeature1: return "Unlimited browsing of all photos"
+        case .paywallFeature2: return "Full EXIF metadata"
+        case .paywallFeature3: return "Slideshow auto-play"
+        case .paywallUnlock: return "Unlock Once"
+        case .paywallRestore: return "Restore Purchase"
+        case .paywallLater: return "Maybe Later"
         case .menuLanguage: return "Language"
         case .menuHelp: return "Help Guide"
         case .menuAbout: return "About EasyPhoto"
