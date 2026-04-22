@@ -151,7 +151,7 @@ struct ContentView: View {
                         .transition(.opacity)
                 }
 
-                // ── 调试信息（提交前删除）────────────────
+                // ── 图片计数提示 ────────────────────────
                 if showImageCountHint && !folderImages.isEmpty && !slideshowActive {
                     VStack {
                         Spacer()
