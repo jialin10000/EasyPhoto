@@ -148,6 +148,8 @@ enum StringKey {
     case menuOpenFolder
     case menuSlideshow
     case menuSlideshowInterval
+    case menuUnlockSlideshow
+    case menuAlreadyUnlocked
     case dialogConfirm
     case dialogCancel
 
@@ -226,6 +228,8 @@ enum StringKey {
         case .menuOpenFolder: return "打开文件夹…"
         case .menuSlideshow: return "幻灯片"
         case .menuSlideshowInterval: return "设置播放间隔…"
+        case .menuUnlockSlideshow: return "解锁幻灯片…"
+        case .menuAlreadyUnlocked: return "幻灯片已解锁 ✓"
         case .dialogConfirm: return "确定"
         case .dialogCancel: return "取消"
         case .helpTitle: return "EasyPhoto 使用帮助"
@@ -304,6 +308,8 @@ enum StringKey {
         case .menuOpenFolder: return "Open Folder…"
         case .menuSlideshow: return "Slideshow"
         case .menuSlideshowInterval: return "Set Interval…"
+        case .menuUnlockSlideshow: return "Unlock Slideshow…"
+        case .menuAlreadyUnlocked: return "Slideshow Unlocked ✓"
         case .dialogConfirm: return "OK"
         case .dialogCancel: return "Cancel"
         case .helpTitle: return "EasyPhoto Help"

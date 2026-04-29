@@ -11,6 +11,7 @@ import UniformTypeIdentifiers
 @main
 struct EasyPhotoApp: App {
     @ObservedObject var loc = LocalizationManager.shared
+    @ObservedObject var pm = PurchaseManager.shared
     @AppStorage("slideshowIntervalSeconds") private var slideshowIntervalSeconds: Int = 3
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
@@ -64,6 +65,16 @@ struct EasyPhotoApp: App {
             CommandMenu(loc.s(.menuSlideshow)) {
                 Button(loc.s(.menuSlideshowInterval)) {
                     openSlideshowIntervalPanel()
+                }
+
+                Divider()
+
+                if pm.isUnlocked {
+                    Text(loc.s(.menuAlreadyUnlocked))
+                } else {
+                    Button(loc.s(.menuUnlockSlideshow)) {
+                        NotificationCenter.default.post(name: .showPaywall, object: nil)
+                    }
                 }
             }
 
@@ -154,6 +165,7 @@ struct EasyPhotoApp: App {
 extension Notification.Name {
     static let openImageFile = Notification.Name("openImageFile")
     static let openImageFolder = Notification.Name("openImageFolder")
+    static let showPaywall = Notification.Name("showPaywall")
 }
 
 // MARK: - AppDelegate（单窗口模式：双击新图片复用已有窗口）

@@ -29,6 +29,7 @@ struct ContentView: View {
     // 付费
     @ObservedObject private var pm = PurchaseManager.shared
     @State private var showingPaywall: Bool = false
+    @State private var paywallFromSlideshow: Bool = false
 
     // 键盘监听
     @State private var keyMonitorBox = KeyMonitorBox()
@@ -174,7 +175,7 @@ struct ContentView: View {
                         onDismiss: { showingPaywall = false },
                         onPurchased: {
                             showingPaywall = false
-                            startSlideshow()
+                            if paywallFromSlideshow { startSlideshow() }
                         }
                     )
                     .transition(.opacity)
@@ -196,6 +197,11 @@ struct ContentView: View {
             if let folderURL = notification.object as? URL {
                 openFolder(folderURL)
             }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .showPaywall)) { _ in
+            guard !pm.isUnlocked else { return }
+            paywallFromSlideshow = false
+            withAnimation(.easeInOut(duration: 0.2)) { showingPaywall = true }
         }
         .onAppear {
             slideshowIntervalSeconds = validatedSlideshowInterval(from: slideshowIntervalSeconds)
@@ -371,6 +377,7 @@ struct ContentView: View {
             return
         }
         guard pm.isUnlocked else {
+            paywallFromSlideshow = true
             withAnimation(.easeInOut(duration: 0.2)) { showingPaywall = true }
             return
         }
