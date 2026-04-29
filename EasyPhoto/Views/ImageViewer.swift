@@ -19,13 +19,13 @@ struct ImageViewer: View {
     var body: some View {
         GeometryReader { geometry in
             ZStack {
+                // ── 图片层：只挂缩放手势，不挂拖拽 ──
                 Image(nsImage: image)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .scaleEffect(scale)
                     .offset(offset)
                     .gesture(
-                        // 缩放手势
                         MagnificationGesture()
                             .onChanged { value in
                                 let newScale = lastScale * value
@@ -33,8 +33,6 @@ struct ImageViewer: View {
                             }
                             .onEnded { _ in
                                 lastScale = scale
-
-                                // 如果缩放太小，恢复到 1.0
                                 if scale < 0.8 {
                                     withAnimation(.spring(response: 0.3)) {
                                         scale = 1.0
@@ -45,28 +43,13 @@ struct ImageViewer: View {
                                 }
                             }
                     )
-                    .gesture(
-                        // 拖动手势（仅在放大时生效）
-                        DragGesture()
-                            .onChanged { value in
-                                if scale > 1.0 {
-                                    offset = CGSize(
-                                        width: lastOffset.width + value.translation.width,
-                                        height: lastOffset.height + value.translation.height
-                                    )
-                                }
-                            }
-                            .onEnded { _ in
-                                lastOffset = offset
-                            }
-                    )
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-                // 点击左/右半区切换图片（仅在未放大时）
-                // 注意：macOS 上 Color.clear 不接受点击，用极低不透明度的 Color
+                // ── 手势层：根据缩放状态切换，避免冲突 ──
                 if scale <= 1.0 {
+                    // 未放大：点击左/右半区导航，双击放大
                     HStack(spacing: 0) {
-                        // 左半区 → 上一张（单击导航，双击放大）
+                        // 左半区 → 上一张
                         Color.white.opacity(0.001)
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .contentShape(Rectangle())
@@ -84,7 +67,7 @@ struct ImageViewer: View {
                                 )
                             )
 
-                        // 右半区 → 下一张（单击导航，双击放大）
+                        // 右半区 → 下一张
                         Color.white.opacity(0.001)
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .contentShape(Rectangle())
@@ -104,10 +87,22 @@ struct ImageViewer: View {
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
-                    // 放大时，双击恢复原始大小
+                    // 放大时：拖拽平移 + 双击复原
                     Color.white.opacity(0.001)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .contentShape(Rectangle())
+                        .gesture(
+                            DragGesture()
+                                .onChanged { value in
+                                    offset = CGSize(
+                                        width: lastOffset.width + value.translation.width,
+                                        height: lastOffset.height + value.translation.height
+                                    )
+                                }
+                                .onEnded { _ in
+                                    lastOffset = offset
+                                }
+                        )
                         .onTapGesture(count: 2) {
                             withAnimation(.spring(response: 0.3)) {
                                 scale = 1.0
