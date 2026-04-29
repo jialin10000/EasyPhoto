@@ -72,7 +72,10 @@ struct ImageViewer: View {
                             .contentShape(Rectangle())
                             .gesture(
                                 TapGesture(count: 2).onEnded {
-                                    withAnimation(.spring(response: 0.3)) { scale = 2.0 }
+                                    withAnimation(.spring(response: 0.3)) {
+                                        scale = 2.0
+                                        lastScale = 2.0
+                                    }
                                 }
                                 .exclusively(before:
                                     TapGesture(count: 1).onEnded {
@@ -87,7 +90,10 @@ struct ImageViewer: View {
                             .contentShape(Rectangle())
                             .gesture(
                                 TapGesture(count: 2).onEnded {
-                                    withAnimation(.spring(response: 0.3)) { scale = 2.0 }
+                                    withAnimation(.spring(response: 0.3)) {
+                                        scale = 2.0
+                                        lastScale = 2.0
+                                    }
                                 }
                                 .exclusively(before:
                                     TapGesture(count: 1).onEnded {
@@ -105,6 +111,7 @@ struct ImageViewer: View {
                         .onTapGesture(count: 2) {
                             withAnimation(.spring(response: 0.3)) {
                                 scale = 1.0
+                                lastScale = 1.0
                                 offset = .zero
                                 lastOffset = .zero
                             }

@@ -49,8 +49,11 @@ struct ExifPanel: View {
                     }
 
                     // 镜头信息
-                    if metadata?.lensModel != nil {
+                    if metadata?.lensModel != nil || metadata?.lensMake != nil {
                         SectionView(title: loc.s(.exifLens)) {
+                            if let make = metadata?.lensMake {
+                                InfoRow(label: loc.s(.exifLensMake), value: make)
+                            }
                             if let lens = metadata?.lensModel {
                                 InfoRow(label: loc.s(.exifLensModel), value: lens)
                             }

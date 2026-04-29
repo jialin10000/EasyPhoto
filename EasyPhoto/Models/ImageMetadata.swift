@@ -101,13 +101,16 @@ struct ImageMetadata {
         }
     }
     
+    private static let displayDateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        return f
+    }()
+
     /// 格式化拍摄日期
     var dateFormatted: String? {
         guard let date = dateTimeOriginal else { return nil }
-        
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
-        return formatter.string(from: date)
+        return Self.displayDateFormatter.string(from: date)
     }
     
     /// 格式化文件大小

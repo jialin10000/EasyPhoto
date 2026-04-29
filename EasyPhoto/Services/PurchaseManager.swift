@@ -5,8 +5,7 @@
 //  StoreKit 2 内购管理器
 //  产品 ID: linjiateam.EasyPhoto.unlockAll（需在 App Store Connect 中创建）
 //
-//  免费规则：每个文件夹显示前 50 张，多于 50 张的目录需解锁才能看全部。
-//  文件夹 ≤ 50 张时，完全没有限制。
+//  免费规则：照片浏览和 EXIF 查看永久免费，幻灯片自动播放需内购解锁。
 //
 
 import StoreKit

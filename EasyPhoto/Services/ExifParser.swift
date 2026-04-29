@@ -239,6 +239,7 @@ class ExifParser {
 
     private static func decodeExposureProgram(_ value: Int) -> String {
         switch value {
+        case 0: return "Not Defined"
         case 1: return "Manual (M)"
         case 2: return "Program (P)"
         case 3: return "Aperture Priority (A)"
@@ -247,7 +248,7 @@ class ExifParser {
         case 6: return "Action (Speed)"
         case 7: return "Portrait"
         case 8: return "Landscape"
-        default: return "Auto"
+        default: return "Unknown"
         }
     }
 
@@ -265,10 +266,14 @@ class ExifParser {
 
     // MARK: - Helper Methods
 
+    private static let exifDateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy:MM:dd HH:mm:ss"
+        return f
+    }()
+
     private static func parseExifDate(_ dateString: String) -> Date? {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy:MM:dd HH:mm:ss"
-        return formatter.date(from: dateString)
+        return exifDateFormatter.date(from: dateString)
     }
     
     private static func cleanString(_ string: String) -> String {

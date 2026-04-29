@@ -223,6 +223,7 @@ struct ContentView: View {
             )
         }
         .onDisappear {
+            stopSlideshow()
             keyMonitorBox.teardown()
         }
     }

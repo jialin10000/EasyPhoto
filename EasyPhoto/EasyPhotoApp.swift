@@ -235,8 +235,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
 class OpenHelpWindowHelper {
     static let shared = OpenHelpWindowHelper()
+    private weak var helpWindow: NSWindow?
 
     func open() {
+        if let existing = helpWindow, existing.isVisible {
+            existing.makeKeyAndOrderFront(nil)
+            return
+        }
+
         let helpView = NSHostingController(rootView: HelpView())
         let window = NSWindow(contentViewController: helpView)
         let loc = LocalizationManager.shared
@@ -245,5 +251,6 @@ class OpenHelpWindowHelper {
         window.styleMask = [.titled, .closable, .miniaturizable]
         window.center()
         window.makeKeyAndOrderFront(nil)
+        helpWindow = window
     }
 }

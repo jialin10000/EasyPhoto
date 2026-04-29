@@ -136,10 +136,6 @@ enum StringKey {
     case paywallUnlock
     case paywallRestore
     case paywallLater
-    // 截断横幅
-    case truncatedBanner   // "仅显示前 50 张 · 共 %d 张"
-    case truncatedUnlock   // "解锁查看全部"
-
     // 菜单
     case menuLanguage
     case menuHelp
@@ -219,8 +215,6 @@ enum StringKey {
         case .paywallUnlock: return "解锁幻灯片"
         case .paywallRestore: return "恢复购买"
         case .paywallLater: return "稍后再说"
-        case .truncatedBanner: return ""
-        case .truncatedUnlock: return ""
         case .menuLanguage: return "语言"
         case .menuHelp: return "使用帮助"
         case .menuAbout: return "关于 EasyPhoto"
@@ -299,8 +293,6 @@ enum StringKey {
         case .paywallUnlock: return "Unlock Slideshow"
         case .paywallRestore: return "Restore Purchase"
         case .paywallLater: return "Maybe Later"
-        case .truncatedBanner: return ""
-        case .truncatedUnlock: return ""
         case .menuLanguage: return "Language"
         case .menuHelp: return "Help Guide"
         case .menuAbout: return "About EasyPhoto"
