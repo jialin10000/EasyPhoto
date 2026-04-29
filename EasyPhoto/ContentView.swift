@@ -170,8 +170,14 @@ struct ContentView: View {
 
                 // ── 付费墙 ─────────────────────────────
                 if showingPaywall {
-                    PaywallView(onDismiss: { showingPaywall = false })
-                        .transition(.opacity)
+                    PaywallView(
+                        onDismiss: { showingPaywall = false },
+                        onPurchased: {
+                            showingPaywall = false
+                            startSlideshow()
+                        }
+                    )
+                    .transition(.opacity)
                 }
             }
             .animation(.easeInOut(duration: 0.2), value: showingPaywall)

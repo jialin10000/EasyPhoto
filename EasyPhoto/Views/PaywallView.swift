@@ -12,6 +12,7 @@ struct PaywallView: View {
     @ObservedObject private var pm = PurchaseManager.shared
     @ObservedObject private var loc = LocalizationManager.shared
     var onDismiss: () -> Void
+    var onPurchased: (() -> Void)?
 
     var body: some View {
         ZStack {
@@ -128,7 +129,13 @@ struct PaywallView: View {
             )
         }
         .onChange(of: pm.isUnlocked) { _, unlocked in
-            if unlocked { onDismiss() }
+            if unlocked {
+                if let onPurchased {
+                    onPurchased()
+                } else {
+                    onDismiss()
+                }
+            }
         }
     }
 
