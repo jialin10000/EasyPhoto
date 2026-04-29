@@ -30,6 +30,7 @@ struct ContentView: View {
     @ObservedObject private var pm = PurchaseManager.shared
     @State private var showingPaywall: Bool = false
     @State private var paywallFromSlideshow: Bool = false
+    @State private var showUnlockBanner: Bool = false
 
     // 键盘监听
     @State private var keyMonitorBox = KeyMonitorBox()
@@ -92,6 +93,25 @@ struct ContentView: View {
                         }
                         Spacer()
                     }
+                }
+
+                // ── 解锁成功 banner ──────────────────────
+                if showUnlockBanner {
+                    VStack {
+                        HStack {
+                            Image(systemName: "checkmark.seal.fill")
+                                .foregroundColor(.green)
+                            Text(loc.s(.unlockSuccessMessage))
+                                .font(.subheadline.bold())
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                        .background(.ultraThinMaterial)
+                        .cornerRadius(10)
+                        .padding(.top, 16)
+                        Spacer()
+                    }
+                    .transition(.move(edge: .top).combined(with: .opacity))
                 }
 
                 // ── 拖拽高亮 ────────────────────────────
@@ -175,7 +195,11 @@ struct ContentView: View {
                         onDismiss: { showingPaywall = false },
                         onPurchased: {
                             showingPaywall = false
-                            if paywallFromSlideshow { startSlideshow() }
+                            withAnimation(.easeInOut(duration: 0.3)) { showUnlockBanner = true }
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+                                withAnimation(.easeInOut(duration: 0.3)) { showUnlockBanner = false }
+                            }
+                            if !folderImages.isEmpty { startSlideshow() }
                         }
                     )
                     .transition(.opacity)

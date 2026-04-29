@@ -78,6 +78,18 @@ struct EasyPhotoApp: App {
                 }
             }
 
+            // Window 菜单
+            CommandMenu("Window") {
+                Button("EasyPhoto") {
+                    NSApp.windows
+                        .filter { !$0.title.contains("Help") && !$0.title.contains("帮助") }
+                        .first?
+                        .makeKeyAndOrderFront(nil)
+                    NSApp.activate(ignoringOtherApps: true)
+                }
+                .keyboardShortcut("0", modifiers: .command)
+            }
+
             // Help 菜单
             CommandGroup(replacing: .help) {
                 Button(loc.s(.menuHelp)) {

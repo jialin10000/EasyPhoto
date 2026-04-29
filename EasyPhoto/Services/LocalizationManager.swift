@@ -136,6 +136,7 @@ enum StringKey {
     case paywallUnlock
     case paywallRestore
     case paywallLater
+    case unlockSuccessMessage
     // 菜单
     case menuLanguage
     case menuHelp
@@ -215,6 +216,7 @@ enum StringKey {
         case .paywallUnlock: return "解锁幻灯片"
         case .paywallRestore: return "恢复购买"
         case .paywallLater: return "稍后再说"
+        case .unlockSuccessMessage: return "幻灯片已解锁！"
         case .menuLanguage: return "语言"
         case .menuHelp: return "使用帮助"
         case .menuAbout: return "关于 EasyPhoto"
@@ -293,6 +295,7 @@ enum StringKey {
         case .paywallUnlock: return "Unlock Slideshow"
         case .paywallRestore: return "Restore Purchase"
         case .paywallLater: return "Maybe Later"
+        case .unlockSuccessMessage: return "Slideshow Unlocked!"
         case .menuLanguage: return "Language"
         case .menuHelp: return "Help Guide"
         case .menuAbout: return "About EasyPhoto"
