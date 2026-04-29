@@ -32,8 +32,6 @@ struct ContentView: View {
     @State private var paywallFromSlideshow: Bool = false
     @State private var showUnlockBanner: Bool = false
 
-    // 键盘监听
-    @State private var keyMonitorBox = KeyMonitorBox()
 
     // EXIF 浮动面板
     @State private var isExifForcedOn: Bool = false
@@ -227,28 +225,25 @@ struct ContentView: View {
             paywallFromSlideshow = false
             withAnimation(.easeInOut(duration: 0.2)) { showingPaywall = true }
         }
-        .onAppear {
-            slideshowIntervalSeconds = validatedSlideshowInterval(from: slideshowIntervalSeconds)
-
-            keyMonitorBox.setup(
+        .background(
+            KeyCaptureView(
                 onLeft:      { navigateImage(direction: -1, userInitiated: true) },
                 onRight:     { navigateImage(direction:  1, userInitiated: true) },
+                onSlideshow: { toggleSlideshow() },
                 onExif: {
                     let newValue = !isExifForcedOn
                     withAnimation(.easeInOut(duration: 0.2)) { isExifForcedOn = newValue }
-                    if newValue {
-                        exifHideTaskBox.cancel()
-                    } else {
-                        scheduleExifHideIfNeeded()
-                    }
+                    if newValue { exifHideTaskBox.cancel() } else { scheduleExifHideIfNeeded() }
                 },
-                onSlideshow: { toggleSlideshow() },
                 onFullscreen: { toggleFullscreen() }
             )
+            .frame(width: 0, height: 0)
+        )
+        .onAppear {
+            slideshowIntervalSeconds = validatedSlideshowInterval(from: slideshowIntervalSeconds)
         }
         .onDisappear {
             stopSlideshow()
-            keyMonitorBox.teardown()
         }
     }
 
@@ -340,9 +335,37 @@ struct ContentView: View {
         let folderURL = url.deletingLastPathComponent()
         folderImages = readImages(in: folderURL)
 
+        if folderImages.isEmpty {
+            // 沙盒限制，弹 NSOpenPanel 请求文件夹访问权限（iSeePro 方案）
+            requestFolderAccess(containing: url, folderURL: folderURL)
+            return
+        }
+
         if let index = folderImages.firstIndex(of: url) {
             currentIndex = index
         } else if let index = folderImages.firstIndex(where: { $0.path == url.path }) {
+            currentIndex = index
+        }
+    }
+
+    private func requestFolderAccess(containing fileURL: URL, folderURL: URL) {
+        let panel = NSOpenPanel()
+        panel.message = "请授权访问照片所在文件夹，以便左右键浏览同目录图片"
+        panel.prompt = "允许访问"
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.directoryURL = folderURL
+        panel.allowsMultipleSelection = false
+
+        guard panel.runModal() == .OK, let grantedURL = panel.url else { return }
+
+        folderImages = readImages(in: grantedURL)
+        let resolved = fileURL.resolvingSymlinksInPath()
+        if let index = folderImages.firstIndex(of: fileURL) {
+            currentIndex = index
+        } else if let index = folderImages.firstIndex(where: {
+            $0.resolvingSymlinksInPath() == resolved || $0.path == fileURL.path
+        }) {
             currentIndex = index
         }
     }
@@ -535,36 +558,63 @@ class HideTaskBox {
     func cancel() { task?.cancel(); task = nil }
 }
 
-// MARK: - 键盘监听（全局，不依赖 first responder）
 
-class KeyMonitorBox {
-    private var monitor: Any?
+// MARK: - 键盘捕获（NSViewRepresentable，兼容 macOS 26）
 
-    func setup(
-        onLeft:      @escaping () -> Void,
-        onRight:     @escaping () -> Void,
-        onExif:      @escaping () -> Void,
-        onSlideshow: @escaping () -> Void,
-        onFullscreen:@escaping () -> Void
-    ) {
-        guard monitor == nil else { return }
-        monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
-            switch event.keyCode {
-            case 123: onLeft();      return nil
-            case 124: onRight();     return nil
-            case 34:  onExif();      return nil
-            case 1:   onSlideshow(); return nil
-            case 3:   onFullscreen(); return nil
-            default:  return event
-            }
+struct KeyCaptureView: NSViewRepresentable {
+    var onLeft:      () -> Void
+    var onRight:     () -> Void
+    var onSlideshow: () -> Void
+    var onExif:      () -> Void
+    var onFullscreen:() -> Void
+
+    func makeNSView(context: Context) -> KeyCaptureNSView {
+        let v = KeyCaptureNSView()
+        v.onLeft = onLeft; v.onRight = onRight
+        v.onSlideshow = onSlideshow; v.onExif = onExif; v.onFullscreen = onFullscreen
+        return v
+    }
+
+    func updateNSView(_ v: KeyCaptureNSView, context: Context) {
+        v.onLeft = onLeft; v.onRight = onRight
+        v.onSlideshow = onSlideshow; v.onExif = onExif; v.onFullscreen = onFullscreen
+        DispatchQueue.main.async { v.window?.makeFirstResponder(v) }
+    }
+}
+
+class KeyCaptureNSView: NSView {
+    var onLeft:      (() -> Void)?
+    var onRight:     (() -> Void)?
+    var onSlideshow: (() -> Void)?
+    var onExif:      (() -> Void)?
+    var onFullscreen:(() -> Void)?
+
+    override var acceptsFirstResponder: Bool { true }
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        // 窗口每次变为 key window 时重新抢占 first responder
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(windowBecameKey),
+            name: NSWindow.didBecomeKeyNotification, object: window
+        )
+        DispatchQueue.main.async { self.window?.makeFirstResponder(self) }
+    }
+
+    @objc private func windowBecameKey() {
+        window?.makeFirstResponder(self)
+    }
+
+    override func keyDown(with event: NSEvent) {
+        switch event.keyCode {
+        case 123: onLeft?()
+        case 124: onRight?()
+        case 1:   onSlideshow?()
+        case 34:  onExif?()
+        case 3:   onFullscreen?()
+        default:  super.keyDown(with: event)
         }
     }
-
-    func teardown() {
-        if let m = monitor { NSEvent.removeMonitor(m); monitor = nil }
-    }
-
-    deinit { teardown() }
 }
 
 #Preview { ContentView() }
