@@ -30,7 +30,7 @@ struct EasyPhotoApp: App {
         .handlesExternalEvents(matching: ["*"])
         .windowStyle(.automatic)
         .commands {
-            // File > Open 菜单
+            // File > Open Image / Open Folder
             CommandGroup(replacing: .newItem) {
                 Button(loc.s(.menuOpenFile)) {
                     openFilePanel()
@@ -43,6 +43,19 @@ struct EasyPhotoApp: App {
                 .keyboardShortcut("o", modifiers: [.command, .shift])
             }
 
+            // File > Print（紧接 Open 之后，Close 之前）
+            CommandGroup(after: .newItem) {
+                Button(loc.s(.menuPrint)) {
+                    NotificationCenter.default.post(name: .printCurrentImage, object: nil)
+                }
+                .keyboardShortcut("p", modifiers: .command)
+            }
+
+            // 删除 Edit 菜单
+            CommandGroup(replacing: .undoRedo) { }
+            CommandGroup(replacing: .pasteboard) { }
+
+            // 删除重复的自定义 Window 菜单（保留系统的）
             // 语言菜单
             CommandMenu(loc.s(.menuLanguage)) {
                 ForEach(LocalizationManager.Language.allCases, id: \.rawValue) { lang in
@@ -76,18 +89,6 @@ struct EasyPhotoApp: App {
                         NotificationCenter.default.post(name: .showPaywall, object: nil)
                     }
                 }
-            }
-
-            // Window 菜单
-            CommandMenu("Window") {
-                Button("EasyPhoto") {
-                    NSApp.windows
-                        .filter { !$0.title.contains("Help") && !$0.title.contains("帮助") }
-                        .first?
-                        .makeKeyAndOrderFront(nil)
-                    NSApp.activate(ignoringOtherApps: true)
-                }
-                .keyboardShortcut("0", modifiers: .command)
             }
 
             // Help 菜单
@@ -178,11 +179,17 @@ extension Notification.Name {
     static let openImageFile = Notification.Name("openImageFile")
     static let openImageFolder = Notification.Name("openImageFolder")
     static let showPaywall = Notification.Name("showPaywall")
+    static let printCurrentImage = Notification.Name("printCurrentImage")
 }
 
 // MARK: - AppDelegate（单窗口模式：双击新图片复用已有窗口）
 
 class AppDelegate: NSObject, NSApplicationDelegate {
+
+    @objc func print(_ sender: Any?) {
+        NotificationCenter.default.post(name: .printCurrentImage, object: nil)
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         applyDockIconIfAvailable()
 

@@ -141,6 +141,7 @@ enum StringKey {
     case menuLanguage
     case menuHelp
     case menuAbout
+    case menuPrint
     case menuOpenFile
     case menuOpenFolder
     case menuSlideshow
@@ -220,6 +221,7 @@ enum StringKey {
         case .menuLanguage: return "语言"
         case .menuHelp: return "使用帮助"
         case .menuAbout: return "关于 EasyPhoto"
+        case .menuPrint: return "打印…"
         case .menuOpenFile: return "打开图片…"
         case .menuOpenFolder: return "打开文件夹…"
         case .menuSlideshow: return "幻灯片"
@@ -299,6 +301,7 @@ enum StringKey {
         case .menuLanguage: return "Language"
         case .menuHelp: return "Help Guide"
         case .menuAbout: return "About EasyPhoto"
+        case .menuPrint: return "Print…"
         case .menuOpenFile: return "Open Image…"
         case .menuOpenFolder: return "Open Folder…"
         case .menuSlideshow: return "Slideshow"

@@ -9,6 +9,7 @@
 
 import SwiftUI
 import UniformTypeIdentifiers
+import PDFKit
 
 struct ContentView: View {
     @EnvironmentObject var loc: LocalizationManager
@@ -224,6 +225,9 @@ struct ContentView: View {
             guard !pm.isUnlocked else { return }
             paywallFromSlideshow = false
             withAnimation(.easeInOut(duration: 0.2)) { showingPaywall = true }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .printCurrentImage)) { _ in
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { printCurrentImage() }
         }
         .background(
             KeyCaptureView(
@@ -498,6 +502,18 @@ struct ContentView: View {
 
     private func validatedSlideshowInterval(from value: Int) -> Int {
         min(max(value, 1), 9)
+    }
+
+    // MARK: - 打印（PDFKit 方案，sandbox 需要 com.apple.security.print 权限）
+    private func printCurrentImage() {
+        guard let image = currentImage,
+              let pdfPage = PDFPage(image: image) else { return }
+        let doc = PDFDocument()
+        doc.insert(pdfPage, at: 0)
+        guard let op = doc.printOperation(for: .shared, scalingMode: .pageScaleToFit, autoRotate: true) else { return }
+        op.showsPrintPanel = true
+        op.showsProgressPanel = true
+        _ = op.run()
     }
 }
 
