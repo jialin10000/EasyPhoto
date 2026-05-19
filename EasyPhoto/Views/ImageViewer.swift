@@ -24,42 +24,6 @@ struct ImageViewer: View {
                     .aspectRatio(contentMode: .fit)
                     .scaleEffect(scale)
                     .offset(offset)
-                    .gesture(
-                        // 缩放手势
-                        MagnificationGesture()
-                            .onChanged { value in
-                                let newScale = lastScale * value
-                                scale = min(max(newScale, 0.5), 10.0)
-                            }
-                            .onEnded { _ in
-                                lastScale = scale
-
-                                // 如果缩放太小，恢复到 1.0
-                                if scale < 0.8 {
-                                    withAnimation(.spring(response: 0.3)) {
-                                        scale = 1.0
-                                        lastScale = 1.0
-                                        offset = .zero
-                                        lastOffset = .zero
-                                    }
-                                }
-                            }
-                    )
-                    .gesture(
-                        // 拖动手势（仅在放大时生效）
-                        DragGesture()
-                            .onChanged { value in
-                                if scale > 1.0 {
-                                    offset = CGSize(
-                                        width: lastOffset.width + value.translation.width,
-                                        height: lastOffset.height + value.translation.height
-                                    )
-                                }
-                            }
-                            .onEnded { _ in
-                                lastOffset = offset
-                            }
-                    )
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
 
                 // 点击左/右半区切换图片（仅在未放大时）
@@ -118,6 +82,39 @@ struct ImageViewer: View {
                         }
                 }
             }
+            // 触控板捏合缩放（simultaneousGesture 不影响左右点击）
+            .simultaneousGesture(
+                MagnificationGesture()
+                    .onChanged { value in
+                        let newScale = lastScale * value
+                        scale = min(max(newScale, 0.5), 10.0)
+                    }
+                    .onEnded { _ in
+                        lastScale = scale
+                        if scale < 0.8 {
+                            withAnimation(.spring(response: 0.3)) {
+                                scale = 1.0
+                                lastScale = 1.0
+                                offset = .zero
+                                lastOffset = .zero
+                            }
+                        }
+                    }
+            )
+            // 拖动平移（minimumDistance 5pt 避免误触；仅放大时生效）
+            .simultaneousGesture(
+                DragGesture(minimumDistance: 5)
+                    .onChanged { value in
+                        guard scale > 1.0 else { return }
+                        offset = CGSize(
+                            width: lastOffset.width + value.translation.width,
+                            height: lastOffset.height + value.translation.height
+                        )
+                    }
+                    .onEnded { _ in
+                        if scale > 1.0 { lastOffset = offset }
+                    }
+            )
         }
         .background(Color(NSColor.windowBackgroundColor))
         .onChange(of: image) { _, _ in
