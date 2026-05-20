@@ -6,6 +6,9 @@
 //
 
 import SwiftUI
+import MapKit
+import AppKit
+import CoreLocation
 
 struct ExifPanel: View {
     let metadata: ImageMetadata?
@@ -18,7 +21,7 @@ struct ExifPanel: View {
             DragHandle()
 
             // 内容区
-            ScrollView {
+            ScrollView(.vertical, showsIndicators: true) {
                 VStack(alignment: .leading, spacing: 16) {
                     // 文件信息
                     if let url = imageURL {
@@ -32,6 +35,26 @@ struct ExifPanel: View {
                             if let resolution = metadata?.resolutionFormatted {
                                 InfoRow(label: loc.s(.exifResolution), value: resolution)
                             }
+                        }
+                    }
+
+                    // Location 信息（紧接 File，包含城市/国家文字 + 可点击小地图）
+                    if metadata?.hasGPS == true,
+                       let lat = metadata?.latitude,
+                       let lon = metadata?.longitude {
+                        SectionView(title: loc.s(.exifLocation)) {
+                            if let gps = metadata?.gpsFormatted {
+                                InfoRow(label: loc.s(.exifCoordinates), value: gps)
+                            }
+
+                            if let altitude = metadata?.altitude {
+                                InfoRow(label: loc.s(.exifAltitude), value: String(format: "%.1f m", altitude))
+                            }
+
+                            GPSMapPreview(latitude: lat, longitude: lon)
+                                .frame(height: 160)
+                                .cornerRadius(8)
+                                .padding(.top, 6)
                         }
                     }
 
@@ -103,19 +126,6 @@ struct ExifPanel: View {
                         SectionView(title: loc.s(.exifTime)) {
                             if let date = metadata?.dateFormatted {
                                 InfoRow(label: loc.s(.exifOriginalDate), value: date)
-                            }
-                        }
-                    }
-
-                    // GPS 信息
-                    if metadata?.hasGPS == true {
-                        SectionView(title: loc.s(.exifLocation)) {
-                            if let gps = metadata?.gpsFormatted {
-                                InfoRow(label: loc.s(.exifCoordinates), value: gps)
-                            }
-
-                            if let altitude = metadata?.altitude {
-                                InfoRow(label: loc.s(.exifAltitude), value: String(format: "%.1f m", altitude))
                             }
                         }
                     }
@@ -217,6 +227,87 @@ private extension View {
     func cursor(_ cursor: NSCursor) -> some View {
         self.onHover { inside in
             if inside { cursor.push() } else { NSCursor.pop() }
+        }
+    }
+}
+
+// MARK: - GPS 小地图（地图上方显示城市/国家文字，点击地图打开 Apple Maps）
+
+private struct GPSMapPreview: View {
+    let latitude: Double
+    let longitude: Double
+
+    @State private var placeName: String?
+
+    var body: some View {
+        let coord = CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
+        let region = MKCoordinateRegion(
+            center: coord,
+            span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
+        )
+
+        VStack(alignment: .leading, spacing: 6) {
+            // 反向地理编码得到的"城市, 国家"
+            if let placeName = placeName, !placeName.isEmpty {
+                HStack(spacing: 4) {
+                    Image(systemName: "mappin.and.ellipse")
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary)
+                    Text(placeName)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
+            }
+
+            // 地图 + 透明点击层（MKMapView 会抢 AppKit 鼠标事件，必须用上面盖一层来接收点击）
+            Button(action: { openInAppleMaps() }) {
+                ZStack(alignment: .bottomTrailing) {
+                    Map(initialPosition: .region(region)) {
+                        Marker("", coordinate: coord)
+                    }
+                    .id("\(latitude),\(longitude)")     // 切换照片时强制重建地图
+                    .allowsHitTesting(false)
+
+                    // 关键：透明层在 Map 之上，作为 Button 实际可点击区域
+                    Color.clear
+                        .contentShape(Rectangle())
+
+                    // 右下角"打开 Apple Maps"提示
+                    Image(systemName: "arrow.up.forward.app")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.white)
+                        .padding(6)
+                        .background(.black.opacity(0.45))
+                        .clipShape(Circle())
+                        .padding(8)
+                        .allowsHitTesting(false)
+                }
+            }
+            .buttonStyle(.plain)
+            .help("点击在 Apple Maps 中打开（查看更广区域）")
+        }
+        .onAppear { loadPlaceName() }
+        .onChange(of: latitude) { _, _ in loadPlaceName() }
+        .onChange(of: longitude) { _, _ in loadPlaceName() }
+    }
+
+    private func loadPlaceName() {
+        placeName = nil
+        let location = CLLocation(latitude: latitude, longitude: longitude)
+        CLGeocoder().reverseGeocodeLocation(location) { placemarks, _ in
+            guard let p = placemarks?.first else { return }
+            let city = p.locality ?? p.subAdministrativeArea ?? p.administrativeArea ?? ""
+            let country = p.country ?? ""
+            let joined = [city, country].filter { !$0.isEmpty }.joined(separator: ", ")
+            DispatchQueue.main.async { placeName = joined }
+        }
+    }
+
+    private func openInAppleMaps() {
+        let urlString = "https://maps.apple.com/?ll=\(latitude),\(longitude)&q=\(latitude),\(longitude)"
+        if let url = URL(string: urlString) {
+            NSWorkspace.shared.open(url)
         }
     }
 }

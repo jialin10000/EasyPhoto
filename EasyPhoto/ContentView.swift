@@ -135,7 +135,9 @@ struct ContentView: View {
                 // ── 浮动 EXIF 面板 ─────────────────────
                 if isExifVisible {
                     let panelW: CGFloat = 280
-                    let panelH: CGFloat = min(540, geo.size.height - 40)
+                    // 有 GPS 地图时面板更高，让地图完整显示
+                    let basePanelH: CGFloat = metadata?.hasGPS == true ? 720 : 540
+                    let panelH: CGFloat = min(basePanelH, geo.size.height - 40)
 
                     ExifPanel(metadata: metadata, imageURL: currentImageURL)
                         .overlay(
@@ -156,8 +158,8 @@ struct ContentView: View {
                             x: geo.size.width - panelW / 2 - 10 + exifDragOffset.width,
                             y: geo.size.height / 2 + exifDragOffset.height
                         )
-                        .gesture(
-                            DragGesture()
+                        .simultaneousGesture(
+                            DragGesture(minimumDistance: 10)
                                 .onChanged { value in
                                     exifDragOffset = CGSize(
                                         width: exifDragLastOffset.width + value.translation.width,
@@ -539,6 +541,9 @@ private final class TrackingNSView: NSView {
     var onEntered: (() -> Void)?
     var onExited: (() -> Void)?
     private var trackingAreaRef: NSTrackingArea?
+
+    // 点击穿透：tracking 仍工作（hover 进入/退出），但鼠标点击直接传给下层
+    override func hitTest(_ point: NSPoint) -> NSView? { nil }
 
     override func updateTrackingAreas() {
         super.updateTrackingAreas()
