@@ -62,6 +62,7 @@ struct HelpView: View {
                     shortcutRow(key: loc.currentLanguage == .chinese ? "双击" : "Dbl-click", desc: loc.s(.helpShortcutZoomIn))
                     shortcutRow(key: loc.currentLanguage == .chinese ? "双击" : "Dbl-click", desc: loc.s(.helpShortcutZoomReset))
                     shortcutRow(key: loc.currentLanguage == .chinese ? "拖拽" : "Drag", desc: loc.s(.helpShortcutDrag))
+                    shortcutRow(key: "⌘⌫", desc: loc.s(.helpShortcutDelete))
                 }
 
                 // 使用技巧

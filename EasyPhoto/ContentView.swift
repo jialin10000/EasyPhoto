@@ -231,6 +231,9 @@ struct ContentView: View {
         .onReceive(NotificationCenter.default.publisher(for: .printCurrentImage)) { _ in
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { printCurrentImage() }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .deleteCurrentImage)) { _ in
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { deleteCurrentImage() }
+        }
         .background(
             KeyCaptureView(
                 onLeft:      { navigateImage(direction: -1, userInitiated: true) },
@@ -421,6 +424,78 @@ struct ContentView: View {
         guard newIndex >= 0 && newIndex < folderImages.count else { return }
         currentIndex = newIndex
         loadImage(from: folderImages[newIndex], showCountHint: userInitiated)
+    }
+
+    // MARK: - 删除（移到废纸篓，需要 user-selected.read-write 权限）
+
+    private func deleteCurrentImage() {
+        guard let url = currentImageURL else { return }
+
+        // 幻灯片正在跑时先停，避免定时器踩到已删除的文件
+        if slideshowActive { stopSlideshow() }
+
+        guard confirmDelete(fileName: url.lastPathComponent) else { return }
+
+        let scoped = url.startAccessingSecurityScopedResource()
+        defer {
+            if scoped { url.stopAccessingSecurityScopedResource() }
+        }
+
+        do {
+            try FileManager.default.trashItem(at: url, resultingItemURL: nil)
+        } catch {
+            showDeleteFailedAlert(error)
+            return
+        }
+
+        advanceAfterDelete(of: url)
+    }
+
+    private func confirmDelete(fileName: String) -> Bool {
+        let alert = NSAlert()
+        alert.messageText = loc.s(.deleteConfirmTitle)
+        alert.informativeText = "\(fileName)\n\n\(loc.s(.deleteConfirmMessage))"
+        alert.alertStyle = .warning
+        // Esc 取消；回车不绑定任何按钮，删除必须明确点击，避免误删
+        // 按 macOS 惯例：删除按钮在前（右侧，回车），取消在后（Esc）。
+        // 不自定义 keyEquivalent——改动会让 AppKit 的 Esc 取消失效（实测）。
+        let delete = alert.addButton(withTitle: loc.s(.deleteConfirmButton))
+        delete.hasDestructiveAction = true
+        alert.addButton(withTitle: loc.s(.dialogCancel))
+        return alert.runModal() == .alertFirstButtonReturn
+    }
+
+    private func showDeleteFailedAlert(_ error: Error) {
+        let alert = NSAlert()
+        alert.messageText = loc.s(.deleteFailedTitle)
+        alert.informativeText = error.localizedDescription
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: loc.s(.dialogConfirm))
+        alert.runModal()
+    }
+
+    /// 删除成功后：从列表移除，显示下一张（没有下一张就退回上一张，都没有就清空）
+    private func advanceAfterDelete(of url: URL) {
+        let deletedIndex = folderImages.firstIndex(of: url)
+            ?? folderImages.firstIndex(where: { $0.path == url.path })
+
+        if let deletedIndex {
+            folderImages.remove(at: deletedIndex)
+        }
+
+        guard !folderImages.isEmpty, let deletedIndex else {
+            currentImage = nil
+            currentImageURL = nil
+            metadata = nil
+            currentIndex = 0
+            folderImages = []
+            hideAllHints()
+            return
+        }
+
+        let nextIndex = min(deletedIndex, folderImages.count - 1)
+        currentIndex = nextIndex
+        loadImage(from: folderImages[nextIndex], showCountHint: true)
     }
 
     // MARK: - 幻灯片（Pro 功能，未付费弹付费墙）

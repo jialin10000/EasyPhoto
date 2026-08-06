@@ -49,6 +49,13 @@ struct EasyPhotoApp: App {
                     NotificationCenter.default.post(name: .printCurrentImage, object: nil)
                 }
                 .keyboardShortcut("p", modifiers: .command)
+
+                Divider()
+
+                Button(loc.s(.menuDelete)) {
+                    NotificationCenter.default.post(name: .deleteCurrentImage, object: nil)
+                }
+                .keyboardShortcut(.delete, modifiers: .command)
             }
 
             // 删除 Edit 菜单
@@ -180,6 +187,7 @@ extension Notification.Name {
     static let openImageFolder = Notification.Name("openImageFolder")
     static let showPaywall = Notification.Name("showPaywall")
     static let printCurrentImage = Notification.Name("printCurrentImage")
+    static let deleteCurrentImage = Notification.Name("deleteCurrentImage")
 }
 
 // MARK: - AppDelegate（单窗口模式：双击新图片复用已有窗口）

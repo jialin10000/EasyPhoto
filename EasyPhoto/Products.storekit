@@ -1,0 +1,80 @@
+{
+  "identifier" : "F7A8B3C2-1234-4567-8901-ABCDEF123456",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+    {
+      "displayPrice" : "0.99",
+      "familyShareable" : false,
+      "internalID" : "D1E2F3A4-5678-9012-3456-789012345678",
+      "localizations" : [
+        {
+          "description" : "Unlock slideshow auto-play with adjustable interval",
+          "displayName" : "Unlock Slideshow",
+          "locale" : "en_US"
+        },
+        {
+          "description" : "解锁幻灯片自动播放，间隔可调",
+          "displayName" : "解锁幻灯片",
+          "locale" : "zh_CN"
+        }
+      ],
+      "productID" : "linjiateam.EasyPhoto.unlockAll",
+      "referenceName" : "Unlock Slideshow",
+      "type" : "NonConsumable"
+    }
+  ],
+  "settings" : {
+    "_failTransactionsEnabled" : false,
+    "_storeKitErrors" : [
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Load Products"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Purchase"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Verification"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "App Store Sync"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Subscription Status"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "App Transaction"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Manage Subscriptions Sheet"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Offer Code Redeem Sheet"
+      }
+    ]
+  },
+  "subscriptionGroups" : [
+
+  ],
+  "version" : {
+    "major" : 4,
+    "minor" : 0
+  }
+}

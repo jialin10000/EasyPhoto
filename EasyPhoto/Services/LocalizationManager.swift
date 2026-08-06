@@ -148,8 +148,15 @@ enum StringKey {
     case menuSlideshowInterval
     case menuUnlockSlideshow
     case menuAlreadyUnlocked
+    case menuDelete
     case dialogConfirm
     case dialogCancel
+
+    // 删除
+    case deleteConfirmTitle
+    case deleteConfirmMessage
+    case deleteConfirmButton
+    case deleteFailedTitle
 
     // Help 窗口
     case helpTitle
@@ -167,6 +174,7 @@ enum StringKey {
     case helpShortcutZoomIn
     case helpShortcutZoomReset
     case helpShortcutDrag
+    case helpShortcutDelete
     case helpTipsTitle
     case helpTipFolder
     case helpTipExif
@@ -228,8 +236,13 @@ enum StringKey {
         case .menuSlideshowInterval: return "设置播放间隔…"
         case .menuUnlockSlideshow: return "解锁幻灯片…"
         case .menuAlreadyUnlocked: return "幻灯片已解锁 ✓"
+        case .menuDelete: return "删除当前图片…"
         case .dialogConfirm: return "确定"
         case .dialogCancel: return "取消"
+        case .deleteConfirmTitle: return "确定要删除这张图片吗？"
+        case .deleteConfirmMessage: return "图片将被移到废纸篓，可以在废纸篓中恢复。"
+        case .deleteConfirmButton: return "移到废纸篓"
+        case .deleteFailedTitle: return "删除失败"
         case .helpTitle: return "EasyPhoto 使用帮助"
         case .helpBasicTitle: return "基本操作"
         case .helpBasicDragDrop: return "将图片文件拖拽到窗口中即可查看"
@@ -245,6 +258,7 @@ enum StringKey {
         case .helpShortcutZoomIn: return "双击图片 — 放大到 2 倍"
         case .helpShortcutZoomReset: return "放大时双击 — 恢复原始大小"
         case .helpShortcutDrag: return "放大时拖拽 — 平移图片"
+        case .helpShortcutDelete: return "⌘⌫ — 把当前图片移到废纸篓（会先询问）"
         case .helpTipsTitle: return "使用技巧"
         case .helpTipFolder: return "拖入一张图片后，会自动加载同文件夹下的所有图片，方便浏览"
         case .helpTipExif: return "EXIF 面板显示详细的相机、镜头、拍摄参数和 GPS 位置信息"
@@ -308,8 +322,13 @@ enum StringKey {
         case .menuSlideshowInterval: return "Set Interval…"
         case .menuUnlockSlideshow: return "Unlock Slideshow…"
         case .menuAlreadyUnlocked: return "Slideshow Unlocked ✓"
+        case .menuDelete: return "Delete Current Image…"
         case .dialogConfirm: return "OK"
         case .dialogCancel: return "Cancel"
+        case .deleteConfirmTitle: return "Delete this image?"
+        case .deleteConfirmMessage: return "The image will be moved to the Trash and can be restored from there."
+        case .deleteConfirmButton: return "Move to Trash"
+        case .deleteFailedTitle: return "Delete Failed"
         case .helpTitle: return "EasyPhoto Help"
         case .helpBasicTitle: return "Getting Started"
         case .helpBasicDragDrop: return "Drag and drop an image file into the window to view it"
@@ -325,6 +344,7 @@ enum StringKey {
         case .helpShortcutZoomIn: return "Double-click — Zoom to 2x"
         case .helpShortcutZoomReset: return "Double-click when zoomed — Reset to original"
         case .helpShortcutDrag: return "Drag when zoomed — Pan image"
+        case .helpShortcutDelete: return "⌘⌫ — Move current image to Trash (asks first)"
         case .helpTipsTitle: return "Tips"
         case .helpTipFolder: return "Dropping one image automatically loads all images in the same folder for easy browsing"
         case .helpTipExif: return "The EXIF panel shows detailed camera, lens, shooting parameters and GPS location"
