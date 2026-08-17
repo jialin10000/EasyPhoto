@@ -244,7 +244,12 @@ struct ContentView: View {
                     withAnimation(.easeInOut(duration: 0.2)) { isExifForcedOn = newValue }
                     if newValue { exifHideTaskBox.cancel() } else { scheduleExifHideIfNeeded() }
                 },
-                onFullscreen: { toggleFullscreen() }
+                onFullscreen: { toggleFullscreen() },
+                // 确认框是 NSAlert.runModal，不能在 keyDown 里同步开 modal loop，
+                // 否则这次按键事件还没处理完就嵌套进事件循环。推到下一个 runloop。
+                onDelete: {
+                    DispatchQueue.main.async { deleteCurrentImage() }
+                }
             )
             .frame(width: 0, height: 0)
         )
@@ -663,17 +668,20 @@ struct KeyCaptureView: NSViewRepresentable {
     var onSlideshow: () -> Void
     var onExif:      () -> Void
     var onFullscreen:() -> Void
+    var onDelete:    () -> Void
 
     func makeNSView(context: Context) -> KeyCaptureNSView {
         let v = KeyCaptureNSView()
         v.onLeft = onLeft; v.onRight = onRight
         v.onSlideshow = onSlideshow; v.onExif = onExif; v.onFullscreen = onFullscreen
+        v.onDelete = onDelete
         return v
     }
 
     func updateNSView(_ v: KeyCaptureNSView, context: Context) {
         v.onLeft = onLeft; v.onRight = onRight
         v.onSlideshow = onSlideshow; v.onExif = onExif; v.onFullscreen = onFullscreen
+        v.onDelete = onDelete
         DispatchQueue.main.async { v.window?.makeFirstResponder(v) }
     }
 }
@@ -684,6 +692,7 @@ class KeyCaptureNSView: NSView {
     var onSlideshow: (() -> Void)?
     var onExif:      (() -> Void)?
     var onFullscreen:(() -> Void)?
+    var onDelete:    (() -> Void)?
 
     override var acceptsFirstResponder: Bool { true }
 
@@ -708,6 +717,8 @@ class KeyCaptureNSView: NSView {
         case 1:   onSlideshow?()
         case 34:  onExif?()
         case 3:   onFullscreen?()
+        case 51:  onDelete?()   // Delete（Mac 键盘上的退格键）
+        case 117: onDelete?()   // Forward Delete（fn+Delete / 全尺寸键盘的 Del）
         default:  super.keyDown(with: event)
         }
     }
