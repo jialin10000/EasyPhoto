@@ -109,6 +109,8 @@ enum StringKey {
     case exifResolution
     case exifFileSize
     case exifColorSpace
+    case exifColorModel
+    case exifNoColorProfile
     case exifCameraMake
     case exifCameraModel
     case exifLensModel
@@ -200,6 +202,8 @@ enum StringKey {
         case .exifResolution: return "分辨率"
         case .exifFileSize: return "文件大小"
         case .exifColorSpace: return "色彩空间"
+        case .exifColorModel: return "颜色模型"
+        case .exifNoColorProfile: return "无内嵌 profile（按 sRGB 显示）"
         case .exifCameraMake: return "制造商"
         case .exifCameraModel: return "型号"
         case .exifLensModel: return "镜头型号"
@@ -286,6 +290,8 @@ enum StringKey {
         case .exifResolution: return "Resolution"
         case .exifFileSize: return "File Size"
         case .exifColorSpace: return "Color Space"
+        case .exifColorModel: return "Color Model"
+        case .exifNoColorProfile: return "No embedded profile (shown as sRGB)"
         case .exifCameraMake: return "Make"
         case .exifCameraModel: return "Model"
         case .exifLensModel: return "Lens Model"

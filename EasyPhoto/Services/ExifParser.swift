@@ -34,7 +34,8 @@ class ExifParser {
         // 解析图片尺寸
         metadata.imageWidth = properties[kCGImagePropertyPixelWidth as String] as? Int
         metadata.imageHeight = properties[kCGImagePropertyPixelHeight as String] as? Int
-        metadata.colorSpace = properties[kCGImagePropertyColorModel as String] as? String
+        metadata.colorModel = properties[kCGImagePropertyColorModel as String] as? String
+        metadata.colorSpace = parseColorSpace(properties: properties)
         
         // 解析 EXIF 数据
         if let exif = properties[kCGImagePropertyExifDictionary as String] as? [String: Any] {
@@ -63,7 +64,20 @@ class ExifParser {
     }
     
     // MARK: - Private Methods
-    
+
+    /// 真实色彩空间 = 内嵌 ICC profile 名，这是渲染时实际生效的那一个。
+    ///
+    /// 不读 EXIF 的 ColorSpace 标签：JPEG 即使没有 ICC，ImageIO 也会补上假定的
+    /// sRGB profile 名，所以那条回退永远轮不到（已用剥掉 ICC 和 EXIF 的裸 JPEG 实测）。
+    /// 而 EXIF 标签本身还不可靠——实测 Adobe RGB 的 JPEG 标签是 65535（Uncalibrated）。
+    /// 真正拿不到 profile 的是无标记的 PNG / TIFF / BMP，返回 nil 交给界面说明。
+    private static func parseColorSpace(properties: [String: Any]) -> String? {
+        guard let profile = properties[kCGImagePropertyProfileName as String] as? String,
+              !profile.isEmpty else { return nil }
+        return profile
+    }
+
+
     private static func parseExif(exif: [String: Any], metadata: inout ImageMetadata) {
         // 曝光时间 (快门速度)
         if let exposureTime = exif[kCGImagePropertyExifExposureTime as String] as? Double {

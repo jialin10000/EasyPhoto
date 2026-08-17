@@ -39,7 +39,8 @@ struct ImageMetadata {
     // 图片信息
     var imageWidth: Int?             // 图片宽度
     var imageHeight: Int?            // 图片高度
-    var colorSpace: String?          // 色彩空间
+    var colorModel: String?          // 颜色模型：RGB / CMYK / Gray（kCGImagePropertyColorModel）
+    var colorSpace: String?          // 色彩空间：内嵌 ICC profile 名，如 sRGB IEC61966-2.1 / Display P3
     var fileSize: Int64?             // 文件大小 (bytes)
     var fileName: String?            // 文件名
     

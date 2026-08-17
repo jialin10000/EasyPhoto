@@ -35,6 +35,18 @@ struct ExifPanel: View {
                             if let resolution = metadata?.resolutionFormatted {
                                 InfoRow(label: loc.s(.exifResolution), value: resolution)
                             }
+
+                            // 色彩空间那行总是显示：拿不到 profile 本身就是有用的信息
+                            if metadata != nil {
+                                InfoRow(
+                                    label: loc.s(.exifColorSpace),
+                                    value: metadata?.colorSpace ?? loc.s(.exifNoColorProfile)
+                                )
+                            }
+
+                            if let colorModel = metadata?.colorModel {
+                                InfoRow(label: loc.s(.exifColorModel), value: colorModel)
+                            }
                         }
                     }
 
